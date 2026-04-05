@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Button,
@@ -18,7 +18,13 @@ import { productService } from '../../api/productService'
 import { OrderStatusBadge } from '../../components/StatusBadge'
 import { formatRupee } from '../../utils/formatCurrency'
 import { serverPaginationProps } from '../../utils/tablePagination'
-import { columnSortOrder, serverTableOnChange, springSortParam } from '../../utils/serverTableSort'
+import {
+  columnSortOrder,
+  serverTableOnChange,
+  springSortParam,
+  TABLE_SORT_ASC_DESC,
+  useServerTableSortRefs,
+} from '../../utils/serverTableSort'
 import type { ColumnsType } from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
 import type { Customer, Order, OrderStatus, Product } from '../../types/models'
@@ -37,14 +43,7 @@ export default function MyOrders() {
   const [status, setStatus] = useState<OrderStatus | undefined>()
   const [sortField, setSortField] = useState(DEFAULT_SORT_FIELD)
   const [sortOrder, setSortOrder] = useState<SortOrder>('descend')
-  const sortFieldRef = useRef(sortField)
-  useEffect(() => {
-    sortFieldRef.current = sortField
-  }, [sortField])
-  const sortOrderRef = useRef(sortOrder)
-  useEffect(() => {
-    sortOrderRef.current = sortOrder
-  }, [sortOrder])
+  const { sortFieldRef, sortOrderRef } = useServerTableSortRefs(sortField, sortOrder)
   const [drawerOrder, setDrawerOrder] = useState<Order | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [form] = Form.useForm()
@@ -192,6 +191,7 @@ export default function MyOrders() {
       </Space>
       <Table<Order>
         rowKey="id"
+        sortDirections={TABLE_SORT_ASC_DESC}
         loading={isLoading}
         columns={columns}
         dataSource={data?.content ?? []}

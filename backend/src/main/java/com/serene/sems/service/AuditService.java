@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,7 +36,7 @@ public class AuditService {
      * Persists in a new transaction so failures in the caller do not roll back the audit row
      * (e.g. failed login still leaves LOGIN_FAILED).
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
     public void record(
             AuditAction action,
             boolean success,
@@ -66,7 +67,7 @@ public class AuditService {
         auditLogRepository.save(log);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Page<AuditLogResponse> listAdmin(
             AuditAction action,
             String actorUsername,

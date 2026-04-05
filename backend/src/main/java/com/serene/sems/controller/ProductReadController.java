@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/products")
+@RequestMapping("${app.api.base-path}/products")
 @Tag(name = "Products (read)")
 @SecurityRequirement(name = "bearerAuth")
 public class ProductReadController {

@@ -1,5 +1,6 @@
 package com.serene.sems.service;
 
+import com.serene.sems.config.properties.LoginTimingProperties;
 import com.serene.sems.dto.LoginRequest;
 import com.serene.sems.dto.LoginResponse;
 import com.serene.sems.dto.RegisterDealerRequest;
@@ -11,26 +12,21 @@ import com.serene.sems.repository.DealerRepository;
 import com.serene.sems.repository.RoleRepository;
 import com.serene.sems.repository.UserRepository;
 import com.serene.sems.security.JwtProvider;
-import com.serene.sems.security.UserDetailsServiceImpl;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
-import org.springframework.security.authentication.LockedException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
 public class AuthService {
 
-    private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final DealerRepository dealerRepository;
@@ -38,17 +34,19 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+    private final LoginTimingProperties loginTimingProperties;
+    private final AuthLoginTransactionService authLoginTransactionService;
 
     public AuthService(
-            AuthenticationManager authenticationManager,
             UserRepository userRepository,
             RoleRepository roleRepository,
             DealerRepository dealerRepository,
             JwtProvider jwtProvider,
             UserDetailsService userDetailsService,
             PasswordEncoder passwordEncoder,
-            AuditService auditService) {
-        this.authenticationManager = authenticationManager;
+            AuditService auditService,
+            LoginTimingProperties loginTimingProperties,
+            AuthLoginTransactionService authLoginTransactionService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.dealerRepository = dealerRepository;
@@ -56,88 +54,35 @@ public class AuthService {
         this.userDetailsService = userDetailsService;
         this.passwordEncoder = passwordEncoder;
         this.auditService = auditService;
+        this.loginTimingProperties = loginTimingProperties;
+        this.authLoginTransactionService = authLoginTransactionService;
     }
 
-    @Transactional
     public LoginResponse login(LoginRequest request) {
+        long startNanos = System.nanoTime();
         try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
-        } catch (LockedException ex) {
-            auditService.record(
-                    AuditAction.LOGIN_FAILED,
-                    false,
-                    "Locked account sign-in attempt",
-                    null,
-                    null,
-                    request.getUsername(),
-                    null);
-            throw ex;
-        } catch (DisabledException ex) {
-            auditService.record(
-                    AuditAction.LOGIN_FAILED,
-                    false,
-                    "Disabled or expired account sign-in attempt",
-                    null,
-                    null,
-                    request.getUsername(),
-                    null);
-            throw ex;
-        } catch (BadCredentialsException ex) {
-            userRepository.findByUsername(request.getUsername()).ifPresent(user -> {
-                int attempts = user.getFailedAttempts() + 1;
-                user.setFailedAttempts(attempts);
-                if (attempts >= UserDetailsServiceImpl.MAX_FAILED_ATTEMPTS) {
-                    user.setLockTime(Instant.now());
+            return authLoginTransactionService.performLogin(request);
+        } finally {
+            long minNanos = TimeUnit.MILLISECONDS.toNanos(loginTimingProperties.getLoginMinDurationMs());
+            long elapsed = System.nanoTime() - startNanos;
+            if (elapsed < minNanos) {
+                long sleepMs = TimeUnit.NANOSECONDS.toMillis(minNanos - elapsed);
+                if (sleepMs > 0) {
+                    try {
+                        Thread.sleep(sleepMs);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
-                userRepository.save(user);
-            });
-            auditService.record(
-                    AuditAction.LOGIN_FAILED,
-                    false,
-                    "Invalid password or unknown user",
-                    null,
-                    null,
-                    request.getUsername(),
-                    null);
-            throw new BadCredentialsException("Invalid credentials");
+            }
         }
-
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
-        user.setFailedAttempts(0);
-        user.setLockTime(null);
-        user.setLastLoginAt(Instant.now());
-        userRepository.save(user);
-
-        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-        String token = jwtProvider.generateToken(userDetails);
-        Set<String> roles = user.getRoles().stream().map(Role::getName).collect(Collectors.toSet());
-
-        auditService.record(
-                AuditAction.LOGIN_SUCCESS,
-                true,
-                null,
-                "USER",
-                user.getId(),
-                user.getUsername(),
-                user.getId());
-
-        return LoginResponse.builder()
-                .token(token)
-                .type("Bearer")
-                .userId(user.getId())
-                .username(user.getUsername())
-                .email(user.getEmail())
-                .roles(roles)
-                .build();
     }
 
     public void logoutAudit() {
         auditService.record(AuditAction.LOGOUT, true, null, null, null, null, null);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public LoginResponse registerDealer(RegisterDealerRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new IllegalArgumentException("Username already taken");

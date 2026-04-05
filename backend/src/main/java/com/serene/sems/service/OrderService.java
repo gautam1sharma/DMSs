@@ -20,6 +20,7 @@ import com.serene.sems.repository.ProductRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -53,7 +54,7 @@ public class OrderService {
         this.auditService = auditService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Page<OrderResponse> listAdmin(Long dealerId, OrderStatus status, Pageable pageable) {
         if (dealerId != null && status != null) {
             return orderRepository.findByDealerIdAndStatus(dealerId, status, pageable).map(this::toResponse);
@@ -67,13 +68,13 @@ public class OrderService {
         return orderRepository.findAll(pageable).map(this::toResponse);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public OrderResponse getAdmin(Long id) {
         return orderRepository.findById(id).map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public OrderResponse createAdmin(CreateOrderRequest req) {
         Customer customer = customerRepository.findById(req.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
@@ -99,7 +100,7 @@ public class OrderService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public OrderResponse updateStatusAdmin(Long id, UpdateOrderStatusRequest req) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
@@ -117,7 +118,7 @@ public class OrderService {
         return toResponse(saved);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Page<OrderResponse> listDealer(OrderStatus status, Pageable pageable) {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         if (status != null) {
@@ -126,7 +127,7 @@ public class OrderService {
         return orderRepository.findByDealerId(dealer.getId(), pageable).map(this::toResponse);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public OrderResponse getDealer(Long id) {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         Order order = orderRepository.findById(id)
@@ -137,7 +138,7 @@ public class OrderService {
         return toResponse(order);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public OrderResponse createDealer(CreateOrderRequest req) {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         Customer customer = customerRepository.findById(req.getCustomerId())
@@ -157,7 +158,7 @@ public class OrderService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public OrderResponse updateStatusDealer(Long id, UpdateOrderStatusRequest req) {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         Order order = orderRepository.findById(id)
@@ -179,7 +180,7 @@ public class OrderService {
         return toResponse(saved);
     }
 
-    @Transactional
+    /** Pessimistic locks on product rows; runs in caller's transaction (see createAdmin/createDealer). */
     protected Order persistOrder(Customer customer, Dealer dealer, List<OrderItemRequest> itemReqs) {
         Order order = new Order();
         order.setCustomer(customer);
@@ -189,7 +190,7 @@ public class OrderService {
         BigDecimal total = BigDecimal.ZERO;
         List<OrderItem> items = new ArrayList<>();
         for (OrderItemRequest line : itemReqs) {
-            Product product = productRepository.findById(line.getProductId())
+            Product product = productRepository.findByIdForUpdate(line.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + line.getProductId()));
             if (!product.isActive()) {
                 throw new IllegalArgumentException("Product inactive: " + product.getName());

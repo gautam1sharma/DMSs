@@ -10,6 +10,7 @@ import com.serene.sems.repository.ProductRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -23,7 +24,7 @@ public class ProductService {
         this.auditService = auditService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Page<ProductResponse> list(String category, String q, Pageable pageable) {
         if (category != null && !category.isBlank() && q != null && !q.isBlank()) {
             return productRepository.findByCategoryIgnoreCaseAndNameContainingIgnoreCase(category.trim(), q.trim(), pageable)
@@ -38,13 +39,13 @@ public class ProductService {
         return productRepository.findAll(pageable).map(this::toResponse);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public ProductResponse get(Long id) {
         return productRepository.findById(id).map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ProductResponse create(CreateProductRequest req) {
         Product p = new Product();
         p.setName(req.getName());
@@ -59,7 +60,7 @@ public class ProductService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public ProductResponse update(Long id, UpdateProductRequest req) {
         Product p = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
@@ -86,7 +87,7 @@ public class ProductService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void delete(Long id) {
         if (!productRepository.existsById(id)) {
             throw new ResourceNotFoundException("Product not found");

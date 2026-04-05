@@ -1,6 +1,7 @@
 package com.serene.sems.security;
 
 import com.serene.sems.config.JwtProperties;
+import com.serene.sems.util.CryptoUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -47,7 +48,7 @@ public class JwtProvider {
 
     public boolean validateToken(String token, UserDetails userDetails) {
         String subject = extractUsername(token);
-        return subject.equals(userDetails.getUsername()) && !isExpired(token);
+        return CryptoUtils.constantTimeEquals(subject, userDetails.getUsername()) && !isExpired(token);
     }
 
     private boolean isExpired(String token) {

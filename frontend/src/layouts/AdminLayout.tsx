@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   Layout,
@@ -13,17 +13,12 @@ import {
   Tooltip,
 } from 'antd'
 import type { MenuProps } from 'antd'
-import { useQueryClient, useIsFetching } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useIsFetching } from '@tanstack/react-query'
 import {
-  DashboardOutlined,
-  TeamOutlined,
   UserOutlined,
-  ShoppingOutlined,
-  ShoppingCartOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
-  FileSearchOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '../auth/AuthContext'
@@ -31,20 +26,35 @@ import {
   invalidateAdminPortalQueries,
   isAdminPortalQuery,
 } from '../utils/portalQueryRefresh'
+import { menuService } from '../api/menuService'
+import { menuIconFromKey } from '../utils/menuIcons'
+import type { MenuItemDto } from '../types/models'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
 const { useBreakpoint } = Grid
 
-const menuItems: MenuProps['items'] = [
-  { key: '/admin', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/admin/dealers', icon: <TeamOutlined />, label: 'Dealers' },
-  { key: '/admin/customers', icon: <UserOutlined />, label: 'Customers' },
-  { key: '/admin/products', icon: <ShoppingOutlined />, label: 'Products' },
-  { key: '/admin/orders', icon: <ShoppingCartOutlined />, label: 'Orders' },
-  { key: '/admin/users', icon: <UserOutlined />, label: 'Users' },
-  { key: '/admin/audit-logs', icon: <FileSearchOutlined />, label: 'Audit log' },
+const FALLBACK_ADMIN_MENU: MenuItemDto[] = [
+  { id: -1, label: 'Dashboard', path: '/admin', icon: 'DashboardOutlined', sortOrder: 10, enabled: true, roleNames: ['ADMIN'] },
+  { id: -2, label: 'Dealers', path: '/admin/dealers', icon: 'TeamOutlined', sortOrder: 20, enabled: true, roleNames: ['ADMIN'] },
+  { id: -3, label: 'Customers', path: '/admin/customers', icon: 'UserOutlined', sortOrder: 30, enabled: true, roleNames: ['ADMIN'] },
+  { id: -4, label: 'Products', path: '/admin/products', icon: 'ShoppingOutlined', sortOrder: 40, enabled: true, roleNames: ['ADMIN'] },
+  { id: -5, label: 'Orders', path: '/admin/orders', icon: 'ShoppingCartOutlined', sortOrder: 50, enabled: true, roleNames: ['ADMIN'] },
+  { id: -6, label: 'Users', path: '/admin/users', icon: 'UserOutlined', sortOrder: 60, enabled: true, roleNames: ['ADMIN'] },
+  { id: -7, label: 'Audit log', path: '/admin/audit-logs', icon: 'FileSearchOutlined', sortOrder: 70, enabled: true, roleNames: ['ADMIN'] },
+  { id: -8, label: 'Menus', path: '/admin/menus', icon: 'MenuOutlined', sortOrder: 75, enabled: true, roleNames: ['ADMIN'] },
 ]
+
+function toAntMenuItems(rows: MenuItemDto[]): MenuProps['items'] {
+  return rows
+    .filter((m) => m.enabled)
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
+    .map((m) => ({
+      key: m.path,
+      icon: menuIconFromKey(m.icon),
+      label: m.label,
+    }))
+}
 
 export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
@@ -57,6 +67,17 @@ export default function AdminLayout() {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken()
+
+  const { data: apiMenus } = useQuery({
+    queryKey: ['me-menus'],
+    queryFn: menuService.listMyMenus,
+    staleTime: 60_000,
+  })
+
+  const menuItems = useMemo(() => {
+    const src = apiMenus && apiMenus.length > 0 ? apiMenus : FALLBACK_ADMIN_MENU
+    return toAntMenuItems(src)
+  }, [apiMenus])
 
   const onMenuClick: MenuProps['onClick'] = ({ key }) => navigate(key)
 

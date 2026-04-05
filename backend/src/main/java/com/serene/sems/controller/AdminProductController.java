@@ -7,18 +7,22 @@ import com.serene.sems.service.ProductService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/products")
+@RequestMapping("${app.api.base-path}/admin/products")
 @Tag(name = "Admin Products")
 @SecurityRequirement(name = "bearerAuth")
 public class AdminProductController {
@@ -27,6 +31,14 @@ public class AdminProductController {
 
     public AdminProductController(ProductService productService) {
         this.productService = productService;
+    }
+
+    @GetMapping
+    public Page<ProductResponse> list(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String q,
+            Pageable pageable) {
+        return productService.list(category, q, pageable);
     }
 
     @PostMapping

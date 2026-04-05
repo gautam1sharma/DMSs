@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/dealer/dashboard")
+@RequestMapping("${app.api.base-path}/dealer/dashboard")
 @Tag(name = "Dealer Dashboard")
 @SecurityRequirement(name = "bearerAuth")
 public class DealerDashboardController {

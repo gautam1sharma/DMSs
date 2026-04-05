@@ -9,6 +9,7 @@ import com.serene.sems.repository.OrderRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -36,7 +37,7 @@ public class DashboardService {
         this.dealerService = dealerService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public DashboardSummaryResponse adminSummary() {
         DashboardSummaryResponse d = new DashboardSummaryResponse();
         d.setDealerCount(dealerRepository.count());
@@ -48,7 +49,7 @@ public class DashboardService {
         return d;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public DashboardSummaryResponse dealerSummary() {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         DashboardSummaryResponse d = new DashboardSummaryResponse();

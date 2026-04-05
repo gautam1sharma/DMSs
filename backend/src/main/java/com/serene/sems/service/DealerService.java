@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -44,7 +45,7 @@ public class DealerService {
         this.auditService = auditService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Page<DealerResponse> listAdmin(String q, Pageable pageable) {
         if (q != null && !q.isBlank()) {
             return dealerRepository.findByCompanyNameContainingIgnoreCase(q.trim(), pageable).map(this::toResponse);
@@ -52,13 +53,13 @@ public class DealerService {
         return dealerRepository.findAll(pageable).map(this::toResponse);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public DealerResponse getAdmin(Long id) {
         return dealerRepository.findById(id).map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Dealer not found"));
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public DealerResponse create(CreateDealerRequest req) {
         if (userRepository.existsByUsername(req.getUsername())) {
             throw new IllegalArgumentException("Username already taken");
@@ -98,7 +99,7 @@ public class DealerService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public DealerResponse updateAdmin(Long id, UpdateDealerRequest req) {
         Dealer dealer = dealerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Dealer not found"));
@@ -136,7 +137,7 @@ public class DealerService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void delete(Long id) {
         Dealer dealer = dealerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Dealer not found"));
@@ -148,7 +149,7 @@ public class DealerService {
         userRepository.delete(dealer.getUser());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public DealerResponse currentProfile() {
         String username = SecurityUtils.currentUsername();
         Dealer dealer = dealerRepository.findByUserUsername(username)
@@ -156,7 +157,7 @@ public class DealerService {
         return toResponse(dealer);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public DealerResponse updateProfile(UpdateDealerRequest req) {
         String username = SecurityUtils.currentUsername();
         Dealer dealer = dealerRepository.findByUserUsername(username)

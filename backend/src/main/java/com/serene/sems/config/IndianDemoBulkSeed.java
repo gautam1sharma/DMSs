@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedReader;
@@ -139,7 +140,7 @@ public class IndianDemoBulkSeed {
         this.roleRepository = roleRepository;
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void ensureIndianDemoSeeded(PasswordEncoder passwordEncoder) {
         if (userRepository.existsByUsername(INDIAN_MARKER_USER)) {
             log.debug("Indian demo v3 already present ({}), skip", INDIAN_MARKER_USER);

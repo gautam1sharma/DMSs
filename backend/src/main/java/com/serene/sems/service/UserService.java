@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -39,18 +40,18 @@ public class UserService {
         this.auditService = auditService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Page<UserResponse> list(Pageable pageable) {
         return userRepository.findAll(pageable).map(this::toResponse);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public UserResponse get(Long id) {
         return userRepository.findById(id).map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public UserResponse create(CreateUserRequest req) {
         if (userRepository.existsByUsername(req.getUsername())) {
             throw new IllegalArgumentException("Username already taken");
@@ -72,7 +73,7 @@ public class UserService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public UserResponse update(Long id, UpdateUserRequest req) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
@@ -100,7 +101,7 @@ public class UserService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void delete(Long id) {
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("User not found");
@@ -109,7 +110,7 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public UserResponse unlock(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

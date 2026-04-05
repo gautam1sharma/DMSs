@@ -1,9 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Button, Card, DatePicker, Form, Input, Select, Space, Table, Tag, Typography } from 'antd'
 import { auditLogService } from '../../api/auditLogService'
 import { serverPaginationProps } from '../../utils/tablePagination'
-import { columnSortOrder, serverTableOnChange, springSortParam } from '../../utils/serverTableSort'
+import {
+  columnSortOrder,
+  serverTableOnChange,
+  springSortParam,
+  TABLE_SORT_ASC_DESC,
+  useServerTableSortRefs,
+} from '../../utils/serverTableSort'
 import { AUDIT_ACTION_OPTIONS, type AuditLog } from '../../types/models'
 import type { ColumnsType } from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
@@ -19,14 +25,7 @@ export default function ManageAuditLogs() {
   const [size, setSize] = useState(20)
   const [sortField, setSortField] = useState(DEFAULT_SORT_FIELD)
   const [sortOrder, setSortOrder] = useState<SortOrder>('descend')
-  const sortFieldRef = useRef(sortField)
-  useEffect(() => {
-    sortFieldRef.current = sortField
-  }, [sortField])
-  const sortOrderRef = useRef(sortOrder)
-  useEffect(() => {
-    sortOrderRef.current = sortOrder
-  }, [sortOrder])
+  const { sortFieldRef, sortOrderRef } = useServerTableSortRefs(sortField, sortOrder)
   const [form] = Form.useForm<{ action?: string; actorUsername?: string; range?: [dayjs.Dayjs, dayjs.Dayjs] }>()
 
   const [filters, setFilters] = useState<{
@@ -176,6 +175,7 @@ export default function ManageAuditLogs() {
       </Card>
       <Table<AuditLog>
         rowKey="id"
+        sortDirections={TABLE_SORT_ASC_DESC}
         size="small"
         loading={isLoading}
         columns={columns}

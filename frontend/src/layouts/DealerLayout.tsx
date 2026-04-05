@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   Layout,
@@ -13,13 +13,9 @@ import {
   Tooltip,
 } from 'antd'
 import type { MenuProps } from 'antd'
-import { useQueryClient, useIsFetching } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useIsFetching } from '@tanstack/react-query'
 import {
-  DashboardOutlined,
   UserOutlined,
-  ShoppingOutlined,
-  ShoppingCartOutlined,
-  IdcardOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   LogoutOutlined,
@@ -30,18 +26,32 @@ import {
   invalidateDealerPortalQueries,
   isDealerPortalQuery,
 } from '../utils/portalQueryRefresh'
+import { menuService } from '../api/menuService'
+import { menuIconFromKey } from '../utils/menuIcons'
+import type { MenuItemDto } from '../types/models'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
 const { useBreakpoint } = Grid
 
-const menuItems: MenuProps['items'] = [
-  { key: '/dealer', icon: <DashboardOutlined />, label: 'Dashboard' },
-  { key: '/dealer/customers', icon: <UserOutlined />, label: 'My customers' },
-  { key: '/dealer/products', icon: <ShoppingOutlined />, label: 'Products' },
-  { key: '/dealer/orders', icon: <ShoppingCartOutlined />, label: 'Orders' },
-  { key: '/dealer/profile', icon: <IdcardOutlined />, label: 'Profile' },
+const FALLBACK_DEALER_MENU: MenuItemDto[] = [
+  { id: -1, label: 'Dashboard', path: '/dealer', icon: 'DashboardOutlined', sortOrder: 10, enabled: true, roleNames: ['DEALER'] },
+  { id: -2, label: 'My customers', path: '/dealer/customers', icon: 'UserOutlined', sortOrder: 20, enabled: true, roleNames: ['DEALER'] },
+  { id: -3, label: 'Products', path: '/dealer/products', icon: 'ShoppingOutlined', sortOrder: 30, enabled: true, roleNames: ['DEALER'] },
+  { id: -4, label: 'Orders', path: '/dealer/orders', icon: 'ShoppingCartOutlined', sortOrder: 40, enabled: true, roleNames: ['DEALER'] },
+  { id: -5, label: 'Profile', path: '/dealer/profile', icon: 'IdcardOutlined', sortOrder: 50, enabled: true, roleNames: ['DEALER'] },
 ]
+
+function toAntMenuItems(rows: MenuItemDto[]): MenuProps['items'] {
+  return rows
+    .filter((m) => m.enabled)
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.id - b.id)
+    .map((m) => ({
+      key: m.path,
+      icon: menuIconFromKey(m.icon),
+      label: m.label,
+    }))
+}
 
 export default function DealerLayout() {
   const [collapsed, setCollapsed] = useState(false)
@@ -54,6 +64,17 @@ export default function DealerLayout() {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken()
+
+  const { data: apiMenus } = useQuery({
+    queryKey: ['me-menus'],
+    queryFn: menuService.listMyMenus,
+    staleTime: 60_000,
+  })
+
+  const menuItems = useMemo(() => {
+    const src = apiMenus && apiMenus.length > 0 ? apiMenus : FALLBACK_DEALER_MENU
+    return toAntMenuItems(src)
+  }, [apiMenus])
 
   const onMenuClick: MenuProps['onClick'] = ({ key }) => navigate(key)
 

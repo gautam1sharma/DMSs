@@ -1,6 +1,9 @@
 package com.serene.sems.config;
 
+import com.serene.sems.config.properties.ApiProperties;
 import com.serene.sems.security.JwtAuthFilter;
+import com.serene.sems.web.ContentCachingRequestFilter;
+import com.serene.sems.web.IdempotencyFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -25,12 +28,26 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
+    private final ApiProperties apiProperties;
+    private final ContentCachingRequestFilter contentCachingRequestFilter;
+    private final IdempotencyFilter idempotencyFilter;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, UserDetailsService userDetailsService) {
+    public SecurityConfig(
+            JwtAuthFilter jwtAuthFilter,
+            UserDetailsService userDetailsService,
+            ApiProperties apiProperties,
+            ContentCachingRequestFilter contentCachingRequestFilter,
+            IdempotencyFilter idempotencyFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
+        this.apiProperties = apiProperties;
+        this.contentCachingRequestFilter = contentCachingRequestFilter;
+        this.idempotencyFilter = idempotencyFilter;
     }
 
+    /**
+     * BCrypt's {@code matches} uses a constant-time path over the hash, reducing timing leaks on password checks.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -52,25 +69,28 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, PasswordEncoder passwordEncoder) throws Exception {
+        String base = apiProperties.getBasePath();
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register")
+                        .requestMatchers(HttpMethod.POST, base + "/auth/login", base + "/auth/register")
                         .permitAll()
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/**")
+                        .requestMatchers(HttpMethod.GET, base + "/products", base + "/products/**")
                         .hasAnyRole("ADMIN", "DEALER", "CUSTOMER")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/dealer/**").hasRole("DEALER")
+                        .requestMatchers(base + "/admin/**").hasRole("ADMIN")
+                        .requestMatchers(base + "/dealer/**").hasRole("DEALER")
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider(passwordEncoder))
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(contentCachingRequestFilter, JwtAuthFilter.class)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(idempotencyFilter, JwtAuthFilter.class);
 
         return http.build();
     }

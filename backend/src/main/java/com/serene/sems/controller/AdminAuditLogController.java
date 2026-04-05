@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Instant;
 
 @RestController
-@RequestMapping("/api/admin/audit-logs")
+@RequestMapping("${app.api.base-path}/admin/audit-logs")
 @Tag(name = "Admin Audit Logs")
 @SecurityRequirement(name = "bearerAuth")
 public class AdminAuditLogController {

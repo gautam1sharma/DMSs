@@ -16,9 +16,16 @@ export function isDealerPortalQuery(query: Query): boolean {
 }
 
 export function invalidateAdminPortalQueries(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ predicate: isAdminPortalQuery })
+  return Promise.all([
+    queryClient.invalidateQueries({ predicate: isAdminPortalQuery }),
+    queryClient.invalidateQueries({ queryKey: ['me-menus'] }),
+    queryClient.invalidateQueries({ queryKey: ['admin-menus'] }),
+  ])
 }
 
 export function invalidateDealerPortalQueries(queryClient: QueryClient) {
-  return queryClient.invalidateQueries({ predicate: isDealerPortalQuery })
+  return Promise.all([
+    queryClient.invalidateQueries({ predicate: isDealerPortalQuery }),
+    queryClient.invalidateQueries({ queryKey: ['me-menus'] }),
+  ])
 }

@@ -1,4 +1,5 @@
-import type { MutableRefObject } from 'react'
+import { useRef } from 'react'
+import type { Key, MutableRefObject } from 'react'
 import type { SortOrder } from 'antd/es/table/interface'
 import type { TableProps } from 'antd'
 
@@ -16,7 +17,44 @@ export function columnSortOrder(
   return sortField === columnKey ? sortOrder ?? undefined : undefined
 }
 
+/** Keeps refs aligned with state on every render (no useEffect lag before the next click). */
+export function useServerTableSortRefs(sortField: string, sortOrder: SortOrder | null | undefined) {
+  const sortFieldRef = useRef(sortField)
+  const sortOrderRef = useRef(sortOrder)
+  sortFieldRef.current = sortField
+  sortOrderRef.current = sortOrder
+  return { sortFieldRef, sortOrderRef }
+}
+
+/** Limit Ant Design to two directions so the header never sticks on a “cleared” step. */
+export const TABLE_SORT_ASC_DESC: SortOrder[] = ['ascend', 'descend']
+
 const DEFAULT_NON_SORTABLE = new Set(['actions', 'a'])
+
+type SorterCell = {
+  columnKey?: Key
+  column?: { key?: Key } | null
+  field?: Key | readonly Key[]
+  order?: SortOrder
+}
+
+function resolveSorterColumnKey(s: SorterCell): string | null {
+  if (s.columnKey != null && s.columnKey !== '') {
+    return String(s.columnKey)
+  }
+  const ck = s.column?.key
+  if (ck != null && ck !== '') {
+    return String(ck)
+  }
+  const f = s.field
+  if (typeof f === 'string' && f) {
+    return f
+  }
+  if (Array.isArray(f) && f.length > 0) {
+    return f.map(String).join('.')
+  }
+  return null
+}
 
 export type ServerTableSortConfig = {
   size: number
@@ -26,7 +64,6 @@ export type ServerTableSortConfig = {
   /** Used when switching away from an ambiguous sort state. */
   defaultSortOrder?: SortOrder
   sortFieldRef: MutableRefObject<string>
-  /** Must track `sortOrder` via useEffect so the handler sees the last committed direction when Ant clears sort on the 3rd click. */
   sortOrderRef: MutableRefObject<SortOrder | null | undefined>
   setSortField: (f: string) => void
   setSortOrder: (o: SortOrder) => void
@@ -44,22 +81,40 @@ export function serverTableOnChange<T>(cfg: ServerTableSortConfig): NonNullable<
     } else {
       cfg.setPage((pag.current ?? 1) - 1)
     }
-    if (extra.action === 'sort') {
-      const s = Array.isArray(sorter) ? sorter[0] : sorter
-      if (s && typeof s.columnKey === 'string' && !skip.has(s.columnKey)) {
-        if (s.order) {
-          cfg.setSortField(s.columnKey)
-          cfg.setSortOrder(s.order)
-        } else if (s.columnKey === cfg.sortFieldRef.current) {
-          // Ant Design’s 3rd click “clears” sort — keep a strict ascend ↔ descend cycle (no unsorted).
-          cfg.setSortField(s.columnKey)
-          const prev = cfg.sortOrderRef.current
-          cfg.setSortOrder(prev === 'descend' ? 'ascend' : 'descend')
-        } else {
-          cfg.setSortField(cfg.defaultSortField)
-          cfg.setSortOrder(cfg.defaultSortOrder ?? 'ascend')
-        }
-      }
+    if (extra.action !== 'sort') {
+      return
     }
+
+    const s = (Array.isArray(sorter) ? sorter[0] : sorter) as SorterCell | undefined
+    if (!s) {
+      return
+    }
+
+    const colKey = resolveSorterColumnKey(s)
+    if (colKey != null && skip.has(colKey)) {
+      return
+    }
+
+    const activeField = cfg.sortFieldRef.current
+
+    if (s.order === 'ascend' || s.order === 'descend') {
+      const field = colKey ?? activeField
+      cfg.setSortField(field)
+      cfg.setSortOrder(s.order)
+      return
+    }
+
+    // Third click: Ant clears `order`; `columnKey` is often missing — treat null key as “same column”.
+    const sameColumn = colKey == null || colKey === activeField
+
+    if (sameColumn) {
+      cfg.setSortField(activeField)
+      const prev = cfg.sortOrderRef.current
+      cfg.setSortOrder(prev === 'descend' ? 'ascend' : 'descend')
+      return
+    }
+
+    cfg.setSortField(cfg.defaultSortField)
+    cfg.setSortOrder(cfg.defaultSortOrder ?? 'ascend')
   }
 }

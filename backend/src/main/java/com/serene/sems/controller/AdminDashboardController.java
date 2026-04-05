@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/admin/dashboard")
+@RequestMapping("${app.api.base-path}/admin/dashboard")
 @Tag(name = "Admin Dashboard")
 @SecurityRequirement(name = "bearerAuth")
 public class AdminDashboardController {

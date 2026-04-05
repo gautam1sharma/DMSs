@@ -12,6 +12,7 @@ import com.serene.sems.repository.DealerRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
@@ -36,19 +37,19 @@ public class CustomerService {
         this.auditService = auditService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Page<CustomerResponse> listAdmin(Long dealerId, String q, Pageable pageable) {
         String nameQ = (q != null && !q.isBlank()) ? q.trim() : null;
         return customerRepository.findCustomers(dealerId, nameQ, pageable).map(this::toResponse);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public CustomerResponse getAdmin(Long id) {
         return customerRepository.findById(id).map(this::toResponse)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public CustomerResponse createAdmin(CreateCustomerRequest req) {
         Dealer dealer;
         if (req.getDealerId() != null) {
@@ -91,7 +92,7 @@ public class CustomerService {
                 .orElse(dealers.get(0));
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public CustomerResponse updateAdmin(Long id, UpdateCustomerRequest req) {
         Customer c = customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
@@ -106,7 +107,7 @@ public class CustomerService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void deleteAdmin(Long id) {
         if (!customerRepository.existsById(id)) {
             throw new ResourceNotFoundException("Customer not found");
@@ -115,14 +116,14 @@ public class CustomerService {
         customerRepository.deleteById(id);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Page<CustomerResponse> listDealer(String q, Pageable pageable) {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         String nameQ = (q != null && !q.isBlank()) ? q.trim() : null;
         return customerRepository.findCustomers(dealer.getId(), nameQ, pageable).map(this::toResponse);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public CustomerResponse getDealer(Long id) {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         Customer c = customerRepository.findById(id)
@@ -133,7 +134,7 @@ public class CustomerService {
         return toResponse(c);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public CustomerResponse createDealer(CreateCustomerRequest req) {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         Customer saved = customerRepository.save(buildCustomer(req, dealer));
@@ -148,7 +149,7 @@ public class CustomerService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public CustomerResponse updateDealer(Long id, UpdateCustomerRequest req) {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         Customer c = customerRepository.findById(id)
@@ -162,7 +163,7 @@ public class CustomerService {
         return toResponse(saved);
     }
 
-    @Transactional
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void deleteDealer(Long id) {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         Customer c = customerRepository.findById(id)

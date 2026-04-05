@@ -18,6 +18,14 @@ server:
     include-message: always
 
 app:
+  api:
+    base-path: /api/v1
+  security:
+    login-min-duration-ms: ${LOGIN_MIN_DURATION_MS:200}
+  idempotency:
+    enabled: ${IDEMPOTENCY_ENABLED:true}
+    ttl-hours: ${IDEMPOTENCY_TTL_HOURS:24}
+    max-body-bytes: ${IDEMPOTENCY_MAX_BODY_BYTES:1048576}
   jwt:
     secret: ${JWT_SECRET:Serene2024SecretKeyForJwtSigningMustBe256BitsLongEnough!!}
     expiration-ms: 86400000
@@ -26,8 +34,6 @@ logging:
   level:
     root: INFO
     com.serene.sems: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 springdoc:
   api-docs:
