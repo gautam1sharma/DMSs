@@ -1,76 +1,67 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth } from './auth/AuthContext'
+import { ProtectedRoute } from './auth/ProtectedRoute'
+import LoginPage from './auth/LoginPage'
+import RegisterPage from './auth/RegisterPage'
+import AdminLayout from './layouts/AdminLayout'
+import DealerLayout from './layouts/DealerLayout'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import ManageDealers from './pages/admin/ManageDealers'
+import ManageCustomers from './pages/admin/ManageCustomers'
+import ManageProducts from './pages/admin/ManageProducts'
+import ManageOrders from './pages/admin/ManageOrders'
+import ManageUsers from './pages/admin/ManageUsers'
+import ManageAuditLogs from './pages/admin/ManageAuditLogs'
+import DealerDashboard from './pages/dealer/DealerDashboard'
+import MyCustomers from './pages/dealer/MyCustomers'
+import DealerProducts from './pages/dealer/DealerProducts'
+import MyOrders from './pages/dealer/MyOrders'
+import DealerProfile from './pages/dealer/DealerProfile'
 
-import LoginPage       from './pages/LoginPage';
-import DashboardPage   from './pages/DashboardPage';
-import DealersPage     from './pages/DealersPage';
-import CustomersPage   from './pages/CustomersPage';
-import VehiclesPage    from './pages/VehiclesPage';
-import OrdersPage      from './pages/OrdersPage';
-import InquiriesPage   from './pages/InquiriesPage';
-import UsersPage       from './pages/UsersPage';
-
-function App() {
-  return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<Navigate to="/login" replace />} />
-
-          {/* Admin routes */}
-          <Route element={<ProtectedRoute roles={['ADMIN']} />}>
-            <Route path="/admin/dashboard" element={<DashboardPage />} />
-            <Route path="/admin/dealers"   element={<DealersPage />} />
-            <Route path="/admin/users"     element={<UsersPage />} />
-            <Route path="/admin/reports"   element={<DashboardPage />} />
-            <Route path="/admin/settings"  element={<DashboardPage />} />
-          </Route>
-
-          {/* Dealer routes */}
-          <Route element={<ProtectedRoute roles={['DEALER']} />}>
-            <Route path="/dealer/dashboard"  element={<DashboardPage />} />
-            <Route path="/dealer/customers"  element={<CustomersPage />} />
-            <Route path="/dealer/vehicles"   element={<VehiclesPage />} />
-            <Route path="/dealer/orders"     element={<OrdersPage />} />
-            <Route path="/dealer/inquiries"  element={<InquiriesPage />} />
-            <Route path="/dealer/profile"    element={<DashboardPage />} />
-          </Route>
-
-          {/* Unauthorized */}
-          <Route path="/unauthorized" element={
-            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'100vh', textAlign:'center' }}>
-              <h1 style={{ fontSize:'4rem', fontWeight:800, color:'var(--brand-500)' }}>403</h1>
-              <p style={{ color:'var(--text-secondary)', marginBottom:24 }}>You don't have permission to access this page.</p>
-              <a href="/login" className="btn btn-primary">Go to Login</a>
-            </div>
-          } />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </BrowserRouter>
-
-      {/* Global toast notifications */}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: '#1e2035',
-            color: '#f8fafc',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '12px',
-            fontSize: '0.875rem',
-          },
-          success: { iconTheme: { primary: '#22c55e', secondary: '#0a0b14' } },
-          error:   { iconTheme: { primary: '#ef4444', secondary: '#0a0b14' } },
-          duration: 3500,
-        }}
-      />
-    </AuthProvider>
-  );
+function HomeRedirect() {
+  const { token, user } = useAuth()
+  if (!token || !user) {
+    return <Navigate to="/login" replace />
+  }
+  if (user.roles?.includes('ADMIN')) {
+    return <Navigate to="/admin" replace />
+  }
+  if (user.roles?.includes('DEALER')) {
+    return <Navigate to="/dealer" replace />
+  }
+  return <Navigate to="/login" replace />
 }
 
-export default App;
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/" element={<HomeRedirect />} />
+
+      <Route element={<ProtectedRoute roles={['ADMIN']} />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="dealers" element={<ManageDealers />} />
+          <Route path="customers" element={<ManageCustomers />} />
+          <Route path="products" element={<ManageProducts />} />
+          <Route path="orders" element={<ManageOrders />} />
+          <Route path="users" element={<ManageUsers />} />
+          <Route path="audit-logs" element={<ManageAuditLogs />} />
+        </Route>
+      </Route>
+
+      <Route element={<ProtectedRoute roles={['DEALER']} />}>
+        <Route path="/dealer" element={<DealerLayout />}>
+          <Route index element={<DealerDashboard />} />
+          <Route path="customers" element={<MyCustomers />} />
+          <Route path="products" element={<DealerProducts />} />
+          <Route path="orders" element={<MyOrders />} />
+          <Route path="profile" element={<DealerProfile />} />
+        </Route>
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
