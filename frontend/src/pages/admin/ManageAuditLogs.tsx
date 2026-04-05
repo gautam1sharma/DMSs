@@ -74,7 +74,7 @@ export default function ManageAuditLogs() {
       key: 'createdAt',
       width: 170,
       sorter: true,
-      sortDirections: ['ascend', 'descend'],
+      sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'createdAt'),
       render: (d: string) => dayjs(d).format('YYYY-MM-DD HH:mm:ss'),
     },
@@ -84,7 +84,7 @@ export default function ManageAuditLogs() {
       key: 'httpMethod',
       width: 88,
       sorter: true,
-      sortDirections: ['ascend', 'descend'],
+      sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'httpMethod'),
       render: (m?: string) =>
         m ? (
@@ -115,7 +115,7 @@ export default function ManageAuditLogs() {
       key: 'requestPath',
       ellipsis: true,
       sorter: true,
-      sortDirections: ['ascend', 'descend'],
+      sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'requestPath'),
       render: (p?: string) =>
         p ? (
@@ -132,7 +132,7 @@ export default function ManageAuditLogs() {
       key: 'httpStatus',
       width: 76,
       sorter: true,
-      sortDirections: ['ascend', 'descend'],
+      sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'httpStatus'),
       render: (code?: number) =>
         code != null ? (
@@ -159,7 +159,7 @@ export default function ManageAuditLogs() {
       key: 'action',
       width: 200,
       sorter: true,
-      sortDirections: ['ascend', 'descend'],
+      sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'action'),
       render: (a: string) => <span style={{ fontFamily: 'monospace', fontSize: 12 }}>{a}</span>,
     },
@@ -169,7 +169,7 @@ export default function ManageAuditLogs() {
       key: 'actorUsername',
       width: 140,
       sorter: true,
-      sortDirections: ['ascend', 'descend'],
+      sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'actorUsername'),
       render: (u?: string) => u || '—',
     },
@@ -179,7 +179,7 @@ export default function ManageAuditLogs() {
       key: 'success',
       width: 72,
       sorter: true,
-      sortDirections: ['ascend', 'descend'],
+      sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'success'),
       render: (ok: boolean) =>
         ok ? <Tag color="success">Yes</Tag> : <Tag color="error">No</Tag>,
@@ -189,7 +189,7 @@ export default function ManageAuditLogs() {
       key: 'targetType',
       width: 140,
       sorter: true,
-      sortDirections: ['ascend', 'descend'],
+      sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'targetType'),
       render: (_, r) =>
         r.targetType || r.targetId != null
@@ -202,7 +202,7 @@ export default function ManageAuditLogs() {
       key: 'ipAddress',
       width: 130,
       sorter: true,
-      sortDirections: ['ascend', 'descend'],
+      sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'ipAddress'),
       render: (ip?: string) => ip || '—',
     },
@@ -212,7 +212,7 @@ export default function ManageAuditLogs() {
       key: 'detail',
       ellipsis: true,
       sorter: true,
-      sortDirections: ['ascend', 'descend'],
+      sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'detail'),
       render: (d?: string) => d || '—',
     },

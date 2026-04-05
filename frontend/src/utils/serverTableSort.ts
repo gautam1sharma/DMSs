@@ -26,8 +26,13 @@ export function useServerTableSortRefs(sortField: string, sortOrder: SortOrder |
   return { sortFieldRef, sortOrderRef }
 }
 
-/** Limit Ant Design to two directions so the header never sticks on a “cleared” step. */
-export const TABLE_SORT_ASC_DESC: SortOrder[] = ['ascend', 'descend']
+/**
+ * Ant Design picks the next tooltip from {@code sortDirections[index + 1]}. With only two entries,
+ * after {@code descend} the next index is undefined so the UI shows “cancel sorting” while our
+ * server handler toggles to ascending. The trailing {@code ascend} fixes the tooltip only; when
+ * already ascending, {@code indexOf} matches the first entry so the cycle stays ascend ↔ descend.
+ */
+export const TABLE_SORT_ASC_DESC: SortOrder[] = ['ascend', 'descend', 'ascend']
 
 const DEFAULT_NON_SORTABLE = new Set(['actions', 'a'])
 
