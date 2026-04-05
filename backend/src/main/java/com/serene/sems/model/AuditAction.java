@@ -20,5 +20,11 @@ public enum AuditAction {
     USER_CREATED,
     USER_UPDATED,
     USER_DELETED,
-    USER_UNLOCKED
+    USER_UNLOCKED,
+
+    /** Admin REST call (method, path, status on the audit row). */
+    ADMIN_API_REQUEST,
+
+    /** Dealer REST call (method, path, status on the audit row). */
+    DEALER_API_REQUEST
 }

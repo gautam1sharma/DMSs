@@ -67,6 +67,35 @@ public class AuditService {
         auditLogRepository.save(log);
     }
 
+    /**
+     * HTTP-level audit for admin ({@code /admin/**}) or dealer ({@code /dealer/**}) API calls.
+     *
+     * @param actorUsername resolved principal (never rely on {@link SecurityContextHolder} here).
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_COMMITTED)
+    public void recordPortalHttpRequest(
+            AuditAction action, String httpMethod, String requestPath, int httpStatus, String actorUsername) {
+        if (action != AuditAction.ADMIN_API_REQUEST && action != AuditAction.DEALER_API_REQUEST) {
+            throw new IllegalArgumentException("Unsupported HTTP audit action: " + action);
+        }
+        String username = actorUsername != null && !actorUsername.isBlank() ? actorUsername : "anonymous";
+        Long userId =
+                "anonymous".equals(username) ? null : userRepository.findByUsername(username).map(User::getId).orElse(null);
+
+        boolean success = httpStatus >= 200 && httpStatus < 400;
+
+        AuditLog log = new AuditLog();
+        log.setAction(action);
+        log.setSuccess(success);
+        log.setHttpMethod(truncate(httpMethod, 16));
+        log.setRequestPath(truncate(requestPath, 1024));
+        log.setHttpStatus(httpStatus);
+        log.setActorUsername(truncate(username, 80));
+        log.setActorUserId(userId);
+        log.setIpAddress(truncate(ClientIpUtils.currentClientIp(), 64));
+        auditLogRepository.save(log);
+    }
+
     @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Page<AuditLogResponse> listAdmin(
             AuditAction action,
@@ -105,6 +134,9 @@ public class AuditService {
         r.setDetail(a.getDetail());
         r.setSuccess(a.isSuccess());
         r.setIpAddress(a.getIpAddress());
+        r.setHttpMethod(a.getHttpMethod());
+        r.setRequestPath(a.getRequestPath());
+        r.setHttpStatus(a.getHttpStatus());
         return r;
     }
 

@@ -26,9 +26,10 @@ import {
   TABLE_SORT_ASC_DESC,
   useServerTableSortRefs,
 } from '../../utils/serverTableSort'
+import { useResizableColumns } from '../../utils/resizableTable'
 import type { ColumnsType } from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
-import type { Customer, Dealer, Order, OrderStatus, Product } from '../../types/models'
+import type { Customer, Dealer, Order, OrderItem, OrderStatus, Product } from '../../types/models'
 import dayjs from 'dayjs'
 
 const { Title } = Typography
@@ -90,7 +91,7 @@ export default function ManageOrders() {
     enabled: createOpen,
   })
 
-  const columns: ColumnsType<Order> = [
+  const baseColumns: ColumnsType<Order> = [
     {
       title: 'Order #',
       dataIndex: 'orderNumber',
@@ -164,6 +165,31 @@ export default function ManageOrders() {
     },
   ]
 
+  const { columns, components } = useResizableColumns(baseColumns, {
+    orderNumber: 140,
+    'customer.fullName': 160,
+    'dealer.companyName': 160,
+    totalAmount: 120,
+    status: 120,
+    orderDate: 170,
+    a: 280,
+  })
+
+  const drawerLineBase: ColumnsType<OrderItem> = [
+    { title: 'Product', dataIndex: 'productName', key: 'productName' },
+    { title: 'Qty', dataIndex: 'quantity', key: 'quantity', width: 72 },
+    {
+      title: 'Price',
+      dataIndex: 'unitPrice',
+      key: 'unitPrice',
+      render: (p: number) => formatRupee(p),
+    },
+  ]
+  const { columns: drawerLineColumns, components: drawerLineComponents } = useResizableColumns(
+    drawerLineBase,
+    { productName: 200, quantity: 72, unitPrice: 120 },
+  )
+
   const submitCreate = async () => {
     const v = await form.validateFields()
     await createMut.mutateAsync({
@@ -223,6 +249,8 @@ export default function ManageOrders() {
       </Space>
       <Table<Order>
         rowKey="id"
+        tableLayout="fixed"
+        components={components}
         sortDirections={TABLE_SORT_ASC_DESC}
         loading={isLoading}
         columns={columns}
@@ -260,20 +288,14 @@ export default function ManageOrders() {
             <Typography.Paragraph>
               <strong>Status:</strong> <OrderStatusBadge status={drawerOrder.status} />
             </Typography.Paragraph>
-            <Table
+            <Table<OrderItem>
               size="small"
+              tableLayout="fixed"
+              components={drawerLineComponents}
               pagination={false}
               rowKey="id"
               dataSource={drawerOrder.items}
-              columns={[
-                { title: 'Product', dataIndex: 'productName' },
-                { title: 'Qty', dataIndex: 'quantity' },
-                {
-                  title: 'Price',
-                  dataIndex: 'unitPrice',
-                  render: (p: number) => formatRupee(p),
-                },
-              ]}
+              columns={drawerLineColumns}
             />
           </Space>
         )}

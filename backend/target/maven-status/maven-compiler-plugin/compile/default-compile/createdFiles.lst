@@ -36,6 +36,7 @@ com\serene\sems\dto\DashboardSummaryResponse.class
 com\serene\sems\dto\LoginResponse.class
 com\serene\sems\repository\UserRepository.class
 com\serene\sems\model\Dealer.class
+com\serene\sems\security\RequestAuditAttributes.class
 com\serene\sems\config\OpenApiConfig.class
 com\serene\sems\controller\ProductReadController.class
 com\serene\sems\config\IndianDemoBulkSeed.class
@@ -99,6 +100,7 @@ com\serene\sems\controller\AdminMenuController.class
 com\serene\sems\config\properties\IdempotencyProperties.class
 com\serene\sems\model\Customer.class
 com\serene\sems\repository\OrderRepository.class
+com\serene\sems\web\PortalHttpAuditFilter.class
 com\serene\sems\model\Role.class
 com\serene\sems\config\JpaAuditingConfig.class
 com\serene\sems\service\CustomerService.class
@@ -107,6 +109,7 @@ com\serene\sems\model\QCustomer.class
 com\serene\sems\config\QuerydslConfig.class
 com\serene\sems\controller\AuthController.class
 com\serene\sems\web\ContentCachingRequestFilter.class
+com\serene\sems\config\AuditLogsCheckConstraintMigration.class
 com\serene\sems\dto\LoginResponse$Builder.class
 com\serene\sems\util\HashUtils.class
 com\serene\sems\dto\UpdateUserRequest.class

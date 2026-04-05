@@ -21,6 +21,7 @@ C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\rep
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\exception\GlobalExceptionHandler.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\config\properties\ApiProperties.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\RegisterDealerRequest.java
+C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\web\PortalHttpAuditFilter.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\service\AuditService.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\UpdateUserRequest.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\config\DataSeeder.java
@@ -58,6 +59,7 @@ C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\security\JwtAuthFilter.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\web\IdempotencyFilter.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\controller\AdminUserController.java
+C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\config\AuditLogsCheckConstraintMigration.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\controller\AuthController.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\OrderItemRequest.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\model\OrderItem.java
@@ -82,6 +84,7 @@ C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\con
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\controller\ProductReadController.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\repository\UserRepository.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\exception\ResourceNotFoundException.java
+C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\security\RequestAuditAttributes.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\audit\AuditorAwareImpl.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\repository\AuditLogRepository.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\MenuItemResponse.java

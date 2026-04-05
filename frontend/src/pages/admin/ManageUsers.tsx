@@ -12,6 +12,7 @@ import {
   TABLE_SORT_ASC_DESC,
   useServerTableSortRefs,
 } from '../../utils/serverTableSort'
+import { useResizableColumns } from '../../utils/resizableTable'
 import type { ColumnsType } from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
 import type { User } from '../../types/models'
@@ -116,7 +117,7 @@ export default function ManageUsers() {
     }
   }
 
-  const columns: ColumnsType<User> = [
+  const baseColumns: ColumnsType<User> = [
     {
       title: 'Username',
       dataIndex: 'username',
@@ -196,6 +197,16 @@ export default function ManageUsers() {
     },
   ]
 
+  const { columns, components } = useResizableColumns(baseColumns, {
+    username: 140,
+    email: 220,
+    roles: 160,
+    enabled: 100,
+    failedAttempts: 88,
+    lastLoginAt: 160,
+    a: 280,
+  })
+
   return (
     <div>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
@@ -208,6 +219,8 @@ export default function ManageUsers() {
       </Space>
       <Table<User>
         rowKey="id"
+        tableLayout="fixed"
+        components={components}
         sortDirections={TABLE_SORT_ASC_DESC}
         loading={isLoading}
         columns={columns}

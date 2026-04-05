@@ -6,6 +6,7 @@ import { menuService, type CreateMenuItemBody, type UpdateMenuItemBody } from '.
 import { ActiveBadge } from '../../components/StatusBadge'
 import type { ColumnsType } from 'antd/es/table'
 import type { MenuItemDto } from '../../types/models'
+import { useResizableColumns } from '../../utils/resizableTable'
 
 const { Title } = Typography
 
@@ -118,7 +119,7 @@ export default function ManageMenus() {
       ?.filter((m) => !editing || m.id !== editing.id)
       .map((m) => ({ value: m.id, label: `${m.label} (${m.path})` })) ?? []
 
-  const columns: ColumnsType<MenuItemDto> = [
+  const baseColumns: ColumnsType<MenuItemDto> = [
     { title: 'Sort', dataIndex: 'sortOrder', width: 72, sorter: (a, b) => a.sortOrder - b.sortOrder, defaultSortOrder: 'ascend' },
     { title: 'Label', dataIndex: 'label', ellipsis: true },
     { title: 'Path', dataIndex: 'path', ellipsis: true },
@@ -170,6 +171,16 @@ export default function ManageMenus() {
     },
   ]
 
+  const { columns, components } = useResizableColumns(baseColumns, {
+    sortOrder: 72,
+    label: 160,
+    path: 200,
+    icon: 140,
+    roleNames: 200,
+    enabled: 100,
+    a: 200,
+  })
+
   return (
     <div>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }}>
@@ -182,6 +193,8 @@ export default function ManageMenus() {
       </Space>
       <Table<MenuItemDto>
         rowKey="id"
+        tableLayout="fixed"
+        components={components}
         loading={isLoading}
         columns={columns}
         dataSource={data ?? []}

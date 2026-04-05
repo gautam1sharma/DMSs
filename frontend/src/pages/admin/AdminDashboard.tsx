@@ -7,6 +7,7 @@ import { formatRupee } from '../../utils/formatCurrency'
 import { OrderStatusBadge } from '../../components/StatusBadge'
 import type { ColumnsType } from 'antd/es/table'
 import type { AuditLog, Order } from '../../types/models'
+import { useResizableColumns } from '../../utils/resizableTable'
 import dayjs from 'dayjs'
 
 const { Title } = Typography
@@ -22,7 +23,7 @@ export default function AdminDashboard() {
     queryFn: () => auditLogService.list({ page: 0, size: 10, sort: 'createdAt,desc' }),
   })
 
-  const columns: ColumnsType<Order> = [
+  const recentOrderBase: ColumnsType<Order> = [
     { title: 'Order #', dataIndex: 'orderNumber', key: 'orderNumber' },
     { title: 'Customer', dataIndex: 'customerName', key: 'customerName' },
     { title: 'Dealer', dataIndex: 'dealerCompanyName', key: 'dealerCompanyName' },
@@ -46,22 +47,52 @@ export default function AdminDashboard() {
     },
   ]
 
-  const auditColumns: ColumnsType<AuditLog> = [
+  const { columns: recentOrderColumns, components: recentOrderComponents } = useResizableColumns(
+    recentOrderBase,
+    {
+      orderNumber: 130,
+      customerName: 140,
+      dealerCompanyName: 140,
+      totalAmount: 120,
+      status: 110,
+      orderDate: 160,
+    },
+  )
+
+  const auditColumnsBase: ColumnsType<AuditLog> = [
     {
       title: 'Time',
       dataIndex: 'createdAt',
+      key: 'createdAt',
       width: 150,
       render: (d: string) => dayjs(d).format('MM-DD HH:mm'),
     },
-    { title: 'Action', dataIndex: 'action', ellipsis: true },
-    { title: 'Actor', dataIndex: 'actorUsername', width: 110, render: (u?: string) => u || '—' },
+    { title: 'Action', dataIndex: 'action', key: 'action', ellipsis: true },
+    {
+      title: 'Actor',
+      dataIndex: 'actorUsername',
+      key: 'actorUsername',
+      width: 110,
+      render: (u?: string) => u || '—',
+    },
     {
       title: '',
       dataIndex: 'success',
+      key: 'success',
       width: 56,
       render: (ok: boolean) => (ok ? <Tag color="success">OK</Tag> : <Tag color="error">!</Tag>),
     },
   ]
+
+  const { columns: auditColumns, components: auditComponents } = useResizableColumns(
+    auditColumnsBase,
+    {
+      createdAt: 150,
+      action: 200,
+      actorUsername: 110,
+      success: 56,
+    },
+  )
 
   return (
     <div>
@@ -95,10 +126,12 @@ export default function AdminDashboard() {
         </Col>
       </Row>
       <Card title="Recent orders" style={{ marginTop: 24 }} loading={isLoading}>
-        <Table
+        <Table<Order>
           rowKey="id"
           size="small"
-          columns={columns}
+          tableLayout="fixed"
+          components={recentOrderComponents}
+          columns={recentOrderColumns}
           dataSource={data?.recentOrders ?? []}
           pagination={false}
         />
@@ -109,9 +142,11 @@ export default function AdminDashboard() {
         loading={auditLoading}
         extra={<Link to="/admin/audit-logs">View all</Link>}
       >
-        <Table
+        <Table<AuditLog>
           rowKey="id"
           size="small"
+          tableLayout="fixed"
+          components={auditComponents}
           columns={auditColumns}
           dataSource={auditPreview?.content ?? []}
           pagination={false}

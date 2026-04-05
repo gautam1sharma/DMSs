@@ -49,6 +49,17 @@ public class AuditLog {
     @Column(length = 64)
     private String ipAddress;
 
+    /** Set for {@link AuditAction#ADMIN_API_REQUEST} rows. */
+    @Column(length = 16)
+    private String httpMethod;
+
+    /** Request URI path (no query string), max 1024. */
+    @Column(length = 1024)
+    private String requestPath;
+
+    /** HTTP status after handling (e.g. 200, 404, 500). */
+    private Integer httpStatus;
+
     @PrePersist
     void prePersist() {
         if (createdAt == null) {
@@ -134,5 +145,29 @@ public class AuditLog {
 
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
+    }
+
+    public String getHttpMethod() {
+        return httpMethod;
+    }
+
+    public void setHttpMethod(String httpMethod) {
+        this.httpMethod = httpMethod;
+    }
+
+    public String getRequestPath() {
+        return requestPath;
+    }
+
+    public void setRequestPath(String requestPath) {
+        this.requestPath = requestPath;
+    }
+
+    public Integer getHttpStatus() {
+        return httpStatus;
+    }
+
+    public void setHttpStatus(Integer httpStatus) {
+        this.httpStatus = httpStatus;
     }
 }

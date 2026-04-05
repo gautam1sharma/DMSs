@@ -24,3 +24,20 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+/* react-resizable: full-height column drag handle in table headers */
+.ant-table-thead .react-resizable-handle {
+  position: absolute;
+  right: -4px;
+  bottom: 0;
+  top: 0;
+  width: 8px;
+  height: auto !important;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 2;
+}
+
+.ant-table-thead .react-resizable-handle:hover {
+  background: color-mix(in srgb, var(--ant-color-primary, #0d9488) 25%, transparent);
+}

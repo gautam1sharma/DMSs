@@ -12,6 +12,7 @@ import {
   TABLE_SORT_ASC_DESC,
   useServerTableSortRefs,
 } from '../../utils/serverTableSort'
+import { useResizableColumns } from '../../utils/resizableTable'
 import type { ColumnsType } from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
 import type { Product } from '../../types/models'
@@ -36,7 +37,7 @@ export default function DealerProducts() {
     queryFn: () => productService.list(page, size, sortParam, category || undefined, q || undefined),
   })
 
-  const columns: ColumnsType<Product> = [
+  const baseColumns: ColumnsType<Product> = [
     {
       title: 'Name',
       dataIndex: 'name',
@@ -81,6 +82,14 @@ export default function DealerProducts() {
     },
   ]
 
+  const { columns, components } = useResizableColumns(baseColumns, {
+    name: 200,
+    category: 140,
+    price: 120,
+    stockQty: 96,
+    active: 100,
+  })
+
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -106,6 +115,8 @@ export default function DealerProducts() {
       </div>
       <Table<Product>
         rowKey="id"
+        tableLayout="fixed"
+        components={components}
         sortDirections={TABLE_SORT_ASC_DESC}
         loading={isLoading}
         columns={columns}

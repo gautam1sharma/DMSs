@@ -10,6 +10,7 @@ import {
   TABLE_SORT_ASC_DESC,
   useServerTableSortRefs,
 } from '../../utils/serverTableSort'
+import { useResizableColumns } from '../../utils/resizableTable'
 import { AUDIT_ACTION_OPTIONS, type AuditLog } from '../../types/models'
 import type { ColumnsType } from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
@@ -66,7 +67,7 @@ export default function ManageAuditLogs() {
     setFilters({})
   }
 
-  const columns: ColumnsType<AuditLog> = [
+  const baseColumns: ColumnsType<AuditLog> = [
     {
       title: 'Time',
       dataIndex: 'createdAt',
@@ -78,7 +79,82 @@ export default function ManageAuditLogs() {
       render: (d: string) => dayjs(d).format('YYYY-MM-DD HH:mm:ss'),
     },
     {
-      title: 'Action',
+      title: 'Method',
+      dataIndex: 'httpMethod',
+      key: 'httpMethod',
+      width: 88,
+      sorter: true,
+      sortDirections: ['ascend', 'descend'],
+      sortOrder: columnSortOrder(sortField, sortOrder, 'httpMethod'),
+      render: (m?: string) =>
+        m ? (
+          <Tag
+            color={
+              m === 'GET'
+                ? 'blue'
+                : m === 'POST'
+                  ? 'green'
+                  : m === 'PUT'
+                    ? 'orange'
+                    : m === 'PATCH'
+                      ? 'purple'
+                      : m === 'DELETE'
+                        ? 'red'
+                        : 'default'
+            }
+          >
+            {m}
+          </Tag>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      title: 'Path',
+      dataIndex: 'requestPath',
+      key: 'requestPath',
+      ellipsis: true,
+      sorter: true,
+      sortDirections: ['ascend', 'descend'],
+      sortOrder: columnSortOrder(sortField, sortOrder, 'requestPath'),
+      render: (p?: string) =>
+        p ? (
+          <span style={{ fontFamily: 'monospace', fontSize: 12 }} title={p}>
+            {p}
+          </span>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      title: 'HTTP',
+      dataIndex: 'httpStatus',
+      key: 'httpStatus',
+      width: 76,
+      sorter: true,
+      sortDirections: ['ascend', 'descend'],
+      sortOrder: columnSortOrder(sortField, sortOrder, 'httpStatus'),
+      render: (code?: number) =>
+        code != null ? (
+          <Tag
+            color={
+              code >= 500
+                ? 'red'
+                : code >= 400
+                  ? 'volcano'
+                  : code >= 300
+                    ? 'geekblue'
+                    : 'success'
+            }
+          >
+            {code}
+          </Tag>
+        ) : (
+          '—'
+        ),
+    },
+    {
+      title: 'Event',
       dataIndex: 'action',
       key: 'action',
       width: 200,
@@ -142,6 +218,19 @@ export default function ManageAuditLogs() {
     },
   ]
 
+  const { columns, components } = useResizableColumns(baseColumns, {
+    createdAt: 170,
+    httpMethod: 88,
+    requestPath: 220,
+    httpStatus: 76,
+    action: 180,
+    actorUsername: 120,
+    success: 72,
+    targetType: 120,
+    ipAddress: 120,
+    detail: 200,
+  })
+
   return (
     <div>
       <Title level={4} style={{ marginTop: 0 }}>
@@ -175,12 +264,14 @@ export default function ManageAuditLogs() {
       </Card>
       <Table<AuditLog>
         rowKey="id"
+        tableLayout="fixed"
+        components={components}
         sortDirections={TABLE_SORT_ASC_DESC}
         size="small"
         loading={isLoading}
         columns={columns}
         dataSource={data?.content ?? []}
-        scroll={{ x: 1100 }}
+        scroll={{ x: 1500 }}
         pagination={serverPaginationProps(data, { page, size, setPage, setSize })}
         onChange={serverTableOnChange<AuditLog>({
           size,

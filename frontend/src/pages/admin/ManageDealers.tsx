@@ -14,6 +14,7 @@ import {
   TABLE_SORT_ASC_DESC,
   useServerTableSortRefs,
 } from '../../utils/serverTableSort'
+import { useResizableColumns } from '../../utils/resizableTable'
 import type { ColumnsType } from 'antd/es/table'
 import type { SortOrder } from 'antd/es/table/interface'
 import type { Dealer } from '../../types/models'
@@ -119,7 +120,7 @@ export default function ManageDealers() {
     }
   }
 
-  const columns: ColumnsType<Dealer> = [
+  const baseColumns: ColumnsType<Dealer> = [
     {
       title: 'Dealer name',
       dataIndex: 'companyName',
@@ -193,6 +194,15 @@ export default function ManageDealers() {
     },
   ]
 
+  const { columns, components } = useResizableColumns(baseColumns, {
+    companyName: 200,
+    'user.username': 130,
+    'user.email': 200,
+    city: 180,
+    active: 100,
+    actions: 200,
+  })
+
   return (
     <div>
       <Space style={{ marginBottom: 16, width: '100%', justifyContent: 'space-between' }} align="center">
@@ -216,6 +226,8 @@ export default function ManageDealers() {
       </Space>
       <Table<Dealer>
         rowKey="id"
+        tableLayout="fixed"
+        components={components}
         sortDirections={TABLE_SORT_ASC_DESC}
         loading={isLoading}
         columns={columns}

@@ -5,6 +5,7 @@ import { formatRupee } from '../../utils/formatCurrency'
 import { OrderStatusBadge } from '../../components/StatusBadge'
 import type { ColumnsType } from 'antd/es/table'
 import type { Order } from '../../types/models'
+import { useResizableColumns } from '../../utils/resizableTable'
 import dayjs from 'dayjs'
 
 const { Title } = Typography
@@ -15,25 +16,36 @@ export default function DealerDashboard() {
     queryFn: () => dashboardService.dealerSummary(),
   })
 
-  const columns: ColumnsType<Order> = [
-    { title: 'Order #', dataIndex: 'orderNumber' },
-    { title: 'Customer', dataIndex: 'customerName' },
+  const recentBase: ColumnsType<Order> = [
+    { title: 'Order #', dataIndex: 'orderNumber', key: 'orderNumber' },
+    { title: 'Customer', dataIndex: 'customerName', key: 'customerName' },
     {
       title: 'Amount',
       dataIndex: 'totalAmount',
+      key: 'totalAmount',
       render: (v: number) => formatRupee(v),
     },
     {
       title: 'Status',
       dataIndex: 'status',
+      key: 'status',
       render: (s) => <OrderStatusBadge status={s} />,
     },
     {
       title: 'Date',
       dataIndex: 'orderDate',
+      key: 'orderDate',
       render: (d: string) => dayjs(d).format('YYYY-MM-DD HH:mm'),
     },
   ]
+
+  const { columns, components } = useResizableColumns(recentBase, {
+    orderNumber: 130,
+    customerName: 160,
+    totalAmount: 120,
+    status: 120,
+    orderDate: 160,
+  })
 
   return (
     <div>
@@ -62,9 +74,11 @@ export default function DealerDashboard() {
         </Col>
       </Row>
       <Card title="Recent orders" style={{ marginTop: 24 }} loading={isLoading}>
-        <Table
+        <Table<Order>
           rowKey="id"
           size="small"
+          tableLayout="fixed"
+          components={components}
           columns={columns}
           dataSource={data?.recentOrders ?? []}
           pagination={false}

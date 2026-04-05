@@ -14,6 +14,9 @@ public class AuditLogResponse {
     private String detail;
     private boolean success;
     private String ipAddress;
+    private String httpMethod;
+    private String requestPath;
+    private Integer httpStatus;
 
     public Long getId() {
         return id;
@@ -93,5 +96,29 @@ public class AuditLogResponse {
 
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
+    }
+
+    public String getHttpMethod() {
+        return httpMethod;
+    }
+
+    public void setHttpMethod(String httpMethod) {
+        this.httpMethod = httpMethod;
+    }
+
+    public String getRequestPath() {
+        return requestPath;
+    }
+
+    public void setRequestPath(String requestPath) {
+        this.requestPath = requestPath;
+    }
+
+    public Integer getHttpStatus() {
+        return httpStatus;
+    }
+
+    public void setHttpStatus(Integer httpStatus) {
+        this.httpStatus = httpStatus;
     }
 }

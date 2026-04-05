@@ -2,6 +2,8 @@ package com.serene.sems.config;
 
 import com.serene.sems.config.properties.ApiProperties;
 import com.serene.sems.security.JwtAuthFilter;
+import com.serene.sems.service.AuditService;
+import com.serene.sems.web.PortalHttpAuditFilter;
 import com.serene.sems.web.ContentCachingRequestFilter;
 import com.serene.sems.web.IdempotencyFilter;
 import org.springframework.context.annotation.Bean;
@@ -19,6 +21,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -68,7 +71,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, PasswordEncoder passwordEncoder) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, PasswordEncoder passwordEncoder, PortalHttpAuditFilter portalHttpAuditFilter)
+            throws Exception {
         String base = apiProperties.getBasePath();
         http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -88,10 +92,18 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider(passwordEncoder))
-                .addFilterBefore(contentCachingRequestFilter, JwtAuthFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(idempotencyFilter, JwtAuthFilter.class);
+                .addFilterBefore(contentCachingRequestFilter, JwtAuthFilter.class)
+                .addFilterAfter(idempotencyFilter, JwtAuthFilter.class)
+                // After authorization so the response status is finalized on the same response we observe,
+                // and immediately before dispatch to controllers.
+                .addFilterAfter(portalHttpAuditFilter, AuthorizationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public PortalHttpAuditFilter portalHttpAuditFilter(AuditService auditService) {
+        return new PortalHttpAuditFilter(auditService, apiProperties);
     }
 }

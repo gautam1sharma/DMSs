@@ -134,6 +134,8 @@ export const AUDIT_ACTION_OPTIONS = [
   'USER_UPDATED',
   'USER_DELETED',
   'USER_UNLOCKED',
+  'ADMIN_API_REQUEST',
+  'DEALER_API_REQUEST',
 ] as const
 
 export type AuditActionName = (typeof AUDIT_ACTION_OPTIONS)[number]
@@ -149,6 +151,10 @@ export interface AuditLog {
   detail?: string
   success: boolean
   ipAddress?: string
+  /** Present for ADMIN_API_REQUEST rows */
+  httpMethod?: string
+  requestPath?: string
+  httpStatus?: number
 }
 
 export interface ApiErrorBody {
