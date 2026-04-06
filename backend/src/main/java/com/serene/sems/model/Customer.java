@@ -12,12 +12,14 @@ import jakarta.persistence.Table;
 @Table(name = "customers")
 public class Customer extends BaseEntity {
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", unique = true)
+    /** Nullable so the portal login can be removed while keeping the customer record for order history. */
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "user_id", unique = true, nullable = true)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "dealer_id", nullable = false)
+    /** Null when no active dealer serves the customer's location (e.g. after a city change). */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "dealer_id", nullable = true)
     private Dealer dealer;
 
     @Column(nullable = false, length = 200)

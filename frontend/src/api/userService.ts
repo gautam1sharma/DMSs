@@ -16,6 +16,15 @@ export const userService = {
     enabled?: boolean
     roleNames: string[]
     accountExpiry?: string
+    companyName?: string
+    phone?: string
+    address?: string
+    countryCode?: string
+    stateCode?: string
+    city?: string
+    dealerActive?: boolean
+    customerFullName?: string
+    customerActive?: boolean
   }) => api.post<User>('/admin/users', body).then((r) => r.data),
 
   update: (
@@ -26,6 +35,15 @@ export const userService = {
       enabled?: boolean
       roleNames?: string[]
       accountExpiry?: string
+      companyName?: string
+      phone?: string
+      address?: string
+      countryCode?: string
+      stateCode?: string
+      city?: string
+      dealerActive?: boolean
+      customerFullName?: string
+      customerActive?: boolean
     },
   ) => api.put<User>(`/admin/users/${id}`, body).then((r) => r.data),
 

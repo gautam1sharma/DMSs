@@ -8,11 +8,12 @@ import com.serene.sems.model.AuditAction;
 import com.serene.sems.model.Dealer;
 import com.serene.sems.model.Role;
 import com.serene.sems.model.User;
-import com.serene.sems.repository.CustomerRepository;
 import com.serene.sems.repository.DealerRepository;
+import com.serene.sems.repository.OrderRepository;
 import com.serene.sems.repository.RoleRepository;
 import com.serene.sems.repository.UserRepository;
 import com.serene.sems.util.SecurityUtils;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,13 +21,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 public class DealerService {
 
     private final DealerRepository dealerRepository;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final CustomerRepository customerRepository;
+    private final OrderRepository orderRepository;
+    private final CustomerDealerAssignmentService customerDealerAssignmentService;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
 
@@ -34,13 +38,15 @@ public class DealerService {
             DealerRepository dealerRepository,
             UserRepository userRepository,
             RoleRepository roleRepository,
-            CustomerRepository customerRepository,
+            OrderRepository orderRepository,
+            CustomerDealerAssignmentService customerDealerAssignmentService,
             PasswordEncoder passwordEncoder,
             AuditService auditService) {
         this.dealerRepository = dealerRepository;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
-        this.customerRepository = customerRepository;
+        this.orderRepository = orderRepository;
+        this.customerDealerAssignmentService = customerDealerAssignmentService;
         this.passwordEncoder = passwordEncoder;
         this.auditService = auditService;
     }
@@ -141,12 +147,28 @@ public class DealerService {
     public void delete(Long id) {
         Dealer dealer = dealerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Dealer not found"));
-        if (customerRepository.countByDealerId(dealer.getId()) > 0) {
-            throw new IllegalArgumentException("Cannot delete dealer with existing customers");
-        }
-        auditService.record(AuditAction.DEALER_DELETED, true, dealer.getCompanyName(), "DEALER", id, null, null);
+        User user = dealer.getUser();
+        deleteDealerRowAndDependents(dealer);
+        userRepository.delete(user);
+    }
+
+    /**
+     * Removes the dealer profile: customers stay and are reassigned by city; past orders keep history with
+     * dealer unlinked.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void purgeDealerProfileIfExists(User user) {
+        dealerRepository.findByUser(user).ifPresent(this::deleteDealerRowAndDependents);
+    }
+
+    private void deleteDealerRowAndDependents(Dealer dealer) {
+        Long dealerId = dealer.getId();
+        customerDealerAssignmentService.reassignCustomersAwayFromDealer(dealerId);
+        orderRepository.unlinkDealerFromOrders(dealerId);
+        orderRepository.flush();
+        auditService.record(
+                AuditAction.DEALER_DELETED, true, dealer.getCompanyName(), "DEALER", dealerId, null, null);
         dealerRepository.delete(dealer);
-        userRepository.delete(dealer.getUser());
     }
 
     @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
@@ -198,6 +220,55 @@ public class DealerService {
         String username = SecurityUtils.currentUsername();
         return dealerRepository.findByUserUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Dealer profile not found"));
+    }
+
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
+    public Optional<Dealer> findDealerForUser(User user) {
+        return dealerRepository.findByUser(user);
+    }
+
+    /**
+     * Creates a {@link Dealer} row for a persisted user that has the DEALER role. No-op if a profile already exists.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void ensureDealerProfileForUser(
+            User user,
+            String companyName,
+            String phone,
+            String address,
+            String countryCode,
+            String stateCode,
+            String city,
+            boolean active) {
+        if (user.getId() == null) {
+            throw new IllegalStateException("User must be persisted before attaching a dealer profile");
+        }
+        if (dealerRepository.findByUser(user).isPresent()) {
+            return;
+        }
+        boolean hasDealerRole =
+                user.getRoles().stream().anyMatch(r -> "DEALER".equals(r.getName()));
+        if (!hasDealerRole) {
+            throw new IllegalArgumentException("User must have the DEALER role to attach a dealer profile");
+        }
+        Dealer dealer = new Dealer();
+        dealer.setUser(user);
+        dealer.setCompanyName(companyName.trim());
+        dealer.setPhone(phone);
+        dealer.setAddress(address);
+        dealer.setCountryCode(blankToNull(countryCode));
+        dealer.setStateCode(blankToNull(stateCode));
+        dealer.setCity(blankToNull(city));
+        dealer.setActive(active);
+        Dealer saved = dealerRepository.save(dealer);
+        auditService.record(
+                AuditAction.DEALER_CREATED,
+                true,
+                saved.getCompanyName(),
+                "DEALER",
+                saved.getId(),
+                null,
+                null);
     }
 
     private DealerResponse toResponse(Dealer d) {

@@ -82,11 +82,14 @@ public class OrderService {
         if (req.getDealerId() != null) {
             dealer = dealerRepository.findById(req.getDealerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Dealer not found"));
-            if (!customer.getDealer().getId().equals(dealer.getId())) {
+            if (customer.getDealer() != null && !customer.getDealer().getId().equals(dealer.getId())) {
                 throw new IllegalArgumentException("Customer does not belong to selected dealer");
             }
         } else {
             dealer = customer.getDealer();
+        }
+        if (dealer == null) {
+            throw new IllegalArgumentException("Customer has no assigned dealer; choose a dealer for this order.");
         }
         Order saved = persistOrder(customer, dealer, req.getItems());
         auditService.record(
@@ -132,7 +135,7 @@ public class OrderService {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-        if (!order.getDealer().getId().equals(dealer.getId())) {
+        if (order.getDealer() == null || !order.getDealer().getId().equals(dealer.getId())) {
             throw new ResourceNotFoundException("Order not found");
         }
         return toResponse(order);
@@ -143,7 +146,7 @@ public class OrderService {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         Customer customer = customerRepository.findById(req.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
-        if (!customer.getDealer().getId().equals(dealer.getId())) {
+        if (customer.getDealer() == null || !customer.getDealer().getId().equals(dealer.getId())) {
             throw new IllegalArgumentException("Customer not found");
         }
         Order saved = persistOrder(customer, dealer, req.getItems());
@@ -163,7 +166,7 @@ public class OrderService {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
-        if (!order.getDealer().getId().equals(dealer.getId())) {
+        if (order.getDealer() == null || !order.getDealer().getId().equals(dealer.getId())) {
             throw new ResourceNotFoundException("Order not found");
         }
         OrderStatus previous = order.getStatus();
@@ -219,8 +222,13 @@ public class OrderService {
         r.setOrderNumber(o.getOrderNumber());
         r.setCustomerId(o.getCustomer().getId());
         r.setCustomerName(o.getCustomer().getFullName());
-        r.setDealerId(o.getDealer().getId());
-        r.setDealerCompanyName(o.getDealer().getCompanyName());
+        if (o.getDealer() != null) {
+            r.setDealerId(o.getDealer().getId());
+            r.setDealerCompanyName(o.getDealer().getCompanyName());
+        } else {
+            r.setDealerId(null);
+            r.setDealerCompanyName(null);
+        }
         r.setTotalAmount(o.getTotalAmount());
         r.setStatus(o.getStatus());
         r.setOrderDate(o.getOrderDate());

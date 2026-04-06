@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -237,6 +238,18 @@ public class IndianDemoBulkSeed {
                 usersById.putIfAbsent(u.getId(), u);
             }
         }
+        /*
+         * Spring Data "StartingWith" / SQL LIKE treats '_' as a wildcard, so prefix "bharat3_dlr_" does not
+         * reliably match usernames like bharat3_dlr_02. Collect exact numbered demo logins explicitly.
+         */
+        collectNumberedDealerDemoUsers(usersById, "bharat3_dlr_", DEMO_DEALER_COUNT);
+        collectNumberedDealerDemoUsers(usersById, "bharat2_dlr_", 40);
+        collectNumberedDealerDemoUsers(usersById, "bharat_dlr_", 40);
+        for (int i = 1; i <= 50; i++) {
+            userRepository
+                    .findByUsername(String.format(Locale.ROOT, "serene_dealer_%02d", i))
+                    .ifPresent(u -> usersById.putIfAbsent(u.getId(), u));
+        }
         for (User u : userRepository.findByEmailLike("dealer%@bharatsems.demo")) {
             usersById.putIfAbsent(u.getId(), u);
         }
@@ -262,8 +275,16 @@ public class IndianDemoBulkSeed {
             dealerRepository.deleteAllById(dealerIds);
         }
         userRepository.deleteAll(usersById.values());
+        userRepository.flush();
         log.info(
                 "Removed {} bulk-demo user(s) (demo username prefixes + seed email patterns) and linked orders/customers/dealers",
                 usersById.size());
+    }
+
+    private void collectNumberedDealerDemoUsers(Map<Long, User> usersById, String basePrefix, int maxIndex) {
+        for (int i = 1; i <= maxIndex; i++) {
+            String username = String.format(Locale.ROOT, "%s%02d", basePrefix, i);
+            userRepository.findByUsername(username).ifPresent(u -> usersById.putIfAbsent(u.getId(), u));
+        }
     }
 }

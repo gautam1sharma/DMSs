@@ -38,6 +38,24 @@ export interface User {
   roles: string[]
   createdAt?: string
   updatedAt?: string
+  /** Set when user has a dealer portal profile (Manage Users + DEALER role). */
+  dealerId?: number
+  dealerCompanyName?: string
+  dealerPhone?: string
+  dealerAddress?: string
+  dealerCountryCode?: string
+  dealerStateCode?: string
+  dealerCity?: string
+  dealerActive?: boolean
+  /** Linked customers row when user has a customer portal profile. */
+  customerId?: number
+  customerFullName?: string
+  customerPhone?: string
+  customerAddress?: string
+  customerCountryCode?: string
+  customerStateCode?: string
+  customerCity?: string
+  customerActive?: boolean
 }
 
 export interface Dealer {
@@ -57,7 +75,7 @@ export interface Dealer {
 
 export interface Customer {
   id: number
-  dealerId: number
+  dealerId?: number
   dealerCompanyName?: string
   userId?: number
   fullName: string
@@ -97,8 +115,8 @@ export interface Order {
   orderNumber: string
   customerId: number
   customerName: string
-  dealerId: number
-  dealerCompanyName: string
+  dealerId?: number
+  dealerCompanyName?: string
   totalAmount: number
   status: OrderStatus
   orderDate: string

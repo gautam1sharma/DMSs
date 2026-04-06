@@ -26,7 +26,12 @@ export default function AdminDashboard() {
   const recentOrderBase: ColumnsType<Order> = [
     { title: 'Order #', dataIndex: 'orderNumber', key: 'orderNumber' },
     { title: 'Customer', dataIndex: 'customerName', key: 'customerName' },
-    { title: 'Dealer', dataIndex: 'dealerCompanyName', key: 'dealerCompanyName' },
+    {
+      title: 'Dealer',
+      dataIndex: 'dealerCompanyName',
+      key: 'dealerCompanyName',
+      render: (name: string | undefined) => name ?? '—',
+    },
     {
       title: 'Amount',
       dataIndex: 'totalAmount',

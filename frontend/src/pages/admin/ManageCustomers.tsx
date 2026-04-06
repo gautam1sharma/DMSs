@@ -106,17 +106,17 @@ export default function ManageCustomers() {
       city: v.city,
     }
     if (editing) {
-      await updateMut.mutateAsync({
-        id: editing.id,
-        body: {
-          fullName: v.fullName,
-          phone: v.phone,
-          address: v.address,
-          ...loc,
-          active: v.active,
-          dealerId: v.dealerId,
-        },
-      })
+      const body: Parameters<typeof customerService.adminUpdate>[1] = {
+        fullName: v.fullName,
+        phone: v.phone,
+        address: v.address,
+        ...loc,
+        active: v.active,
+      }
+      if (v.dealerId !== editing.dealerId) {
+        body.dealerId = v.dealerId
+      }
+      await updateMut.mutateAsync({ id: editing.id, body })
     } else {
       await createMut.mutateAsync({
         ...(v.dealerId != null ? { dealerId: v.dealerId } : {}),
@@ -148,6 +148,7 @@ export default function ManageCustomers() {
       sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'dealer.companyName'),
       showSorterTooltip: { title: 'Sort by dealer' },
+      render: (name: string | undefined) => name ?? '—',
     },
     {
       title: 'Location',
@@ -291,15 +292,14 @@ export default function ManageCustomers() {
             label="Dealer"
             extra={
               editing
-                ? undefined
+                ? 'Changing city re-assigns by location, or pick a dealer here to override. Unassigned if no dealer serves that city.'
                 : 'Optional. Leave empty to auto-assign the active dealer for the selected city (country, state, city required).'
             }
           >
             <Select
-              allowClear
-              placeholder="Auto by city"
+              allowClear={!editing}
+              placeholder={editing ? 'Select dealer' : 'Auto by city'}
               options={dealerOptions}
-              disabled={!!editing}
               showSearch
               optionFilterProp="label"
             />

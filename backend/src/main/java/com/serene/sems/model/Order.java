@@ -25,8 +25,9 @@ public class Order extends BaseEntity {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "dealer_id", nullable = false)
+    /** Null when the fulfilling dealer was removed; order history is kept for the customer. */
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "dealer_id", nullable = true)
     private Dealer dealer;
 
     @Column(name = "order_number", nullable = false, unique = true, length = 40)

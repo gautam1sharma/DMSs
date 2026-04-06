@@ -27,6 +27,33 @@ public class CreateUserRequest {
 
     private Instant accountExpiry;
 
+    /** Required when {@code roleNames} includes {@code DEALER} — creates the dealer portal profile. */
+    @Size(max = 200)
+    private String companyName;
+
+    @Size(max = 40)
+    private String phone;
+
+    @Size(max = 500)
+    private String address;
+
+    @Size(max = 3)
+    private String countryCode;
+
+    @Size(max = 16)
+    private String stateCode;
+
+    @Size(max = 120)
+    private String city;
+
+    private boolean dealerActive = true;
+
+    /** Required when {@code roleNames} includes {@code CUSTOMER} — creates the customer portal profile. */
+    @Size(max = 200)
+    private String customerFullName;
+
+    private boolean customerActive = true;
+
     public String getUsername() {
         return username;
     }
@@ -73,5 +100,77 @@ public class CreateUserRequest {
 
     public void setAccountExpiry(Instant accountExpiry) {
         this.accountExpiry = accountExpiry;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+    }
+
+    public String getStateCode() {
+        return stateCode;
+    }
+
+    public void setStateCode(String stateCode) {
+        this.stateCode = stateCode;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public boolean isDealerActive() {
+        return dealerActive;
+    }
+
+    public void setDealerActive(boolean dealerActive) {
+        this.dealerActive = dealerActive;
+    }
+
+    public String getCustomerFullName() {
+        return customerFullName;
+    }
+
+    public void setCustomerFullName(String customerFullName) {
+        this.customerFullName = customerFullName;
+    }
+
+    public boolean isCustomerActive() {
+        return customerActive;
+    }
+
+    public void setCustomerActive(boolean customerActive) {
+        this.customerActive = customerActive;
     }
 }

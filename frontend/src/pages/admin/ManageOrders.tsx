@@ -117,6 +117,7 @@ export default function ManageOrders() {
       sorter: true,
       sortDirections: TABLE_SORT_ASC_DESC,
       sortOrder: columnSortOrder(sortField, sortOrder, 'dealer.companyName'),
+      render: (name: string | undefined) => name ?? '—',
     },
     {
       title: 'Amount',
@@ -280,7 +281,7 @@ export default function ManageOrders() {
               <strong>Customer:</strong> {drawerOrder.customerName}
             </Typography.Paragraph>
             <Typography.Paragraph>
-              <strong>Dealer:</strong> {drawerOrder.dealerCompanyName}
+              <strong>Dealer:</strong> {drawerOrder.dealerCompanyName ?? '—'}
             </Typography.Paragraph>
             <Typography.Paragraph>
               <strong>Total:</strong> {formatRupee(drawerOrder.totalAmount)}

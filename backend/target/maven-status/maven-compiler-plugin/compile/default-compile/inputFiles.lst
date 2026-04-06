@@ -22,6 +22,7 @@ C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\exc
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\config\properties\ApiProperties.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\RegisterDealerRequest.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\web\PortalHttpAuditFilter.java
+C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\config\NullableDealerFkMigration.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\service\AuditService.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\UpdateUserRequest.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\config\DataSeeder.java
@@ -101,4 +102,5 @@ C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\con
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\service\IdempotentRequestService.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\UpdateOrderStatusRequest.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\repository\RoleRepository.java
+C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\service\CustomerDealerAssignmentService.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\model\Dealer.java

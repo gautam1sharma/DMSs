@@ -17,6 +17,28 @@ public class UserResponse {
     private Instant createdAt;
     private Instant updatedAt;
 
+    /** Present when this user has a dealer portal profile ({@code dealers} row). */
+    private Long dealerId;
+
+    private String dealerCompanyName;
+    private String dealerPhone;
+    private String dealerAddress;
+    private String dealerCountryCode;
+    private String dealerStateCode;
+    private String dealerCity;
+    private Boolean dealerActive;
+
+    /** Present when this user has a linked {@code customers} row (portal profile). */
+    private Long customerId;
+
+    private String customerFullName;
+    private String customerPhone;
+    private String customerAddress;
+    private String customerCountryCode;
+    private String customerStateCode;
+    private String customerCity;
+    private Boolean customerActive;
+
     public Long getId() {
         return id;
     }
@@ -103,5 +125,133 @@ public class UserResponse {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getDealerId() {
+        return dealerId;
+    }
+
+    public void setDealerId(Long dealerId) {
+        this.dealerId = dealerId;
+    }
+
+    public String getDealerCompanyName() {
+        return dealerCompanyName;
+    }
+
+    public void setDealerCompanyName(String dealerCompanyName) {
+        this.dealerCompanyName = dealerCompanyName;
+    }
+
+    public String getDealerPhone() {
+        return dealerPhone;
+    }
+
+    public void setDealerPhone(String dealerPhone) {
+        this.dealerPhone = dealerPhone;
+    }
+
+    public String getDealerAddress() {
+        return dealerAddress;
+    }
+
+    public void setDealerAddress(String dealerAddress) {
+        this.dealerAddress = dealerAddress;
+    }
+
+    public String getDealerCountryCode() {
+        return dealerCountryCode;
+    }
+
+    public void setDealerCountryCode(String dealerCountryCode) {
+        this.dealerCountryCode = dealerCountryCode;
+    }
+
+    public String getDealerStateCode() {
+        return dealerStateCode;
+    }
+
+    public void setDealerStateCode(String dealerStateCode) {
+        this.dealerStateCode = dealerStateCode;
+    }
+
+    public String getDealerCity() {
+        return dealerCity;
+    }
+
+    public void setDealerCity(String dealerCity) {
+        this.dealerCity = dealerCity;
+    }
+
+    public Boolean getDealerActive() {
+        return dealerActive;
+    }
+
+    public void setDealerActive(Boolean dealerActive) {
+        this.dealerActive = dealerActive;
+    }
+
+    public Long getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(Long customerId) {
+        this.customerId = customerId;
+    }
+
+    public String getCustomerFullName() {
+        return customerFullName;
+    }
+
+    public void setCustomerFullName(String customerFullName) {
+        this.customerFullName = customerFullName;
+    }
+
+    public String getCustomerPhone() {
+        return customerPhone;
+    }
+
+    public void setCustomerPhone(String customerPhone) {
+        this.customerPhone = customerPhone;
+    }
+
+    public String getCustomerAddress() {
+        return customerAddress;
+    }
+
+    public void setCustomerAddress(String customerAddress) {
+        this.customerAddress = customerAddress;
+    }
+
+    public String getCustomerCountryCode() {
+        return customerCountryCode;
+    }
+
+    public void setCustomerCountryCode(String customerCountryCode) {
+        this.customerCountryCode = customerCountryCode;
+    }
+
+    public String getCustomerStateCode() {
+        return customerStateCode;
+    }
+
+    public void setCustomerStateCode(String customerStateCode) {
+        this.customerStateCode = customerStateCode;
+    }
+
+    public String getCustomerCity() {
+        return customerCity;
+    }
+
+    public void setCustomerCity(String customerCity) {
+        this.customerCity = customerCity;
+    }
+
+    public Boolean getCustomerActive() {
+        return customerActive;
+    }
+
+    public void setCustomerActive(Boolean customerActive) {
+        this.customerActive = customerActive;
     }
 }

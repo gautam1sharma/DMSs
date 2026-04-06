@@ -28,16 +28,22 @@ public class UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditService auditService;
+    private final DealerService dealerService;
+    private final CustomerService customerService;
 
     public UserService(
             UserRepository userRepository,
             RoleRepository roleRepository,
             PasswordEncoder passwordEncoder,
-            AuditService auditService) {
+            AuditService auditService,
+            DealerService dealerService,
+            CustomerService customerService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.auditService = auditService;
+        this.dealerService = dealerService;
+        this.customerService = customerService;
     }
 
     @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
@@ -59,6 +65,7 @@ public class UserService {
         if (userRepository.existsByEmail(req.getEmail())) {
             throw new IllegalArgumentException("Email already registered");
         }
+        validateRoleCombination(req.getRoleNames());
         User user = new User();
         user.setUsername(req.getUsername());
         user.setEmail(req.getEmail());
@@ -67,7 +74,38 @@ public class UserService {
         user.setAccountExpiry(req.getAccountExpiry());
         user.setLastLoginAt(Instant.now());
         user.setRoles(resolveRoles(req.getRoleNames()));
+        if (roleNamesContainDealer(req.getRoleNames())) {
+            requireDealerCompanyName(req.getCompanyName());
+        }
+        if (roleNamesContainCustomer(req.getRoleNames())) {
+            requireCustomerDisplayName(req.getCustomerFullName());
+        }
+        if (roleNamesContainDealer(req.getRoleNames()) || roleNamesContainCustomer(req.getRoleNames())) {
+            requireSharedLocation(req.getCountryCode(), req.getStateCode(), req.getCity());
+        }
         User saved = userRepository.save(user);
+        if (roleNamesContainDealer(req.getRoleNames())) {
+            dealerService.ensureDealerProfileForUser(
+                    saved,
+                    req.getCompanyName(),
+                    req.getPhone(),
+                    req.getAddress(),
+                    req.getCountryCode(),
+                    req.getStateCode(),
+                    req.getCity(),
+                    req.isDealerActive());
+        }
+        if (roleNamesContainCustomer(req.getRoleNames())) {
+            customerService.ensureCustomerProfileForUser(
+                    saved,
+                    req.getCustomerFullName().trim(),
+                    req.getPhone(),
+                    req.getAddress(),
+                    req.getCountryCode(),
+                    req.getStateCode(),
+                    req.getCity(),
+                    req.isCustomerActive());
+        }
         auditService.record(
                 AuditAction.USER_CREATED, true, saved.getUsername(), "USER", saved.getId(), null, null);
         return toResponse(saved);
@@ -94,20 +132,53 @@ public class UserService {
             user.setAccountExpiry(req.getAccountExpiry());
         }
         if (req.getRoleNames() != null) {
+            validateRoleCombination(req.getRoleNames());
             user.setRoles(resolveRoles(req.getRoleNames()));
         }
         User saved = userRepository.save(user);
+        if (userHasDealerRole(saved) && dealerService.findDealerForUser(saved).isEmpty()) {
+            requireDealerCompanyName(req.getCompanyName());
+            requireSharedLocation(req.getCountryCode(), req.getStateCode(), req.getCity());
+            boolean dealerActive = req.getDealerActive() != null ? req.getDealerActive() : true;
+            dealerService.ensureDealerProfileForUser(
+                    saved,
+                    req.getCompanyName(),
+                    req.getPhone(),
+                    req.getAddress(),
+                    req.getCountryCode(),
+                    req.getStateCode(),
+                    req.getCity(),
+                    dealerActive);
+        }
+        if (userHasCustomerRole(saved) && customerService.findCustomerForUser(saved).isEmpty()) {
+            requireCustomerDisplayName(req.getCustomerFullName());
+            requireSharedLocation(req.getCountryCode(), req.getStateCode(), req.getCity());
+            boolean customerActive = req.getCustomerActive() != null ? req.getCustomerActive() : true;
+            customerService.ensureCustomerProfileForUser(
+                    saved,
+                    req.getCustomerFullName().trim(),
+                    req.getPhone(),
+                    req.getAddress(),
+                    req.getCountryCode(),
+                    req.getStateCode(),
+                    req.getCity(),
+                    customerActive);
+        }
         auditService.record(AuditAction.USER_UPDATED, true, null, "USER", id, null, null);
         return toResponse(saved);
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void delete(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("User not found");
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        if (isProtectedAdministrator(user)) {
+            throw new IllegalArgumentException("Administrator accounts cannot be deleted");
         }
+        customerService.detachCustomerProfileForUser(user);
+        dealerService.purgeDealerProfileIfExists(user);
         auditService.record(AuditAction.USER_DELETED, true, null, "USER", id, null, null);
-        userRepository.deleteById(id);
+        userRepository.delete(user);
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -120,6 +191,15 @@ public class UserService {
         User saved = userRepository.save(user);
         auditService.record(AuditAction.USER_UNLOCKED, true, null, "USER", id, null, null);
         return toResponse(saved);
+    }
+
+    private static boolean isProtectedAdministrator(User user) {
+        if ("admin".equalsIgnoreCase(user.getUsername())) {
+            return true;
+        }
+        return user.getRoles().stream()
+                .map(Role::getName)
+                .anyMatch(r -> r != null && "ADMIN".equalsIgnoreCase(r));
     }
 
     private Set<Role> resolveRoles(Set<String> names) {
@@ -148,6 +228,93 @@ public class UserService {
         r.setRoles(user.getRoles().stream().map(Role::getName).collect(Collectors.toSet()));
         r.setCreatedAt(user.getCreatedAt());
         r.setUpdatedAt(user.getUpdatedAt());
+        dealerService
+                .findDealerForUser(user)
+                .ifPresent(
+                        d -> {
+                            r.setDealerId(d.getId());
+                            r.setDealerCompanyName(d.getCompanyName());
+                            r.setDealerPhone(d.getPhone());
+                            r.setDealerAddress(d.getAddress());
+                            r.setDealerCountryCode(d.getCountryCode());
+                            r.setDealerStateCode(d.getStateCode());
+                            r.setDealerCity(d.getCity());
+                            r.setDealerActive(d.isActive());
+                        });
+        customerService
+                .findCustomerForUser(user)
+                .ifPresent(
+                        c -> {
+                            r.setCustomerId(c.getId());
+                            r.setCustomerFullName(c.getFullName());
+                            r.setCustomerPhone(c.getPhone());
+                            r.setCustomerAddress(c.getAddress());
+                            r.setCustomerCountryCode(c.getCountryCode());
+                            r.setCustomerStateCode(c.getStateCode());
+                            r.setCustomerCity(c.getCity());
+                            r.setCustomerActive(c.isActive());
+                        });
         return r;
+    }
+
+    /**
+     * Customer portal accounts must not share a login with dealer or administrator roles.
+     */
+    private static void validateRoleCombination(Set<String> roleNames) {
+        if (roleNames == null || roleNames.isEmpty()) {
+            return;
+        }
+        if (!roleNames.contains("CUSTOMER")) {
+            return;
+        }
+        if (roleNames.contains("DEALER")) {
+            throw new IllegalArgumentException("A user cannot have both DEALER and CUSTOMER roles");
+        }
+        if (roleNames.contains("ADMIN")) {
+            throw new IllegalArgumentException("A user cannot have both ADMIN and CUSTOMER roles");
+        }
+    }
+
+    private static boolean roleNamesContainDealer(Set<String> roleNames) {
+        return roleNames != null && roleNames.contains("DEALER");
+    }
+
+    private static boolean roleNamesContainCustomer(Set<String> roleNames) {
+        return roleNames != null && roleNames.contains("CUSTOMER");
+    }
+
+    private static boolean userHasDealerRole(User user) {
+        return user.getRoles().stream().anyMatch(r -> "DEALER".equals(r.getName()));
+    }
+
+    private static boolean userHasCustomerRole(User user) {
+        return user.getRoles().stream().anyMatch(r -> "CUSTOMER".equals(r.getName()));
+    }
+
+    private static void requireDealerCompanyName(String companyName) {
+        if (companyName == null || companyName.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Dealer outlet name is required for users with the DEALER role");
+        }
+    }
+
+    private static void requireCustomerDisplayName(String customerFullName) {
+        if (customerFullName == null || customerFullName.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Customer full name is required for users with the CUSTOMER role");
+        }
+    }
+
+    private static void requireSharedLocation(String countryCode, String stateCode, String city) {
+        if (blankToNull(countryCode) == null
+                || blankToNull(stateCode) == null
+                || blankToNull(city) == null) {
+            throw new IllegalArgumentException(
+                    "Country, state, and city are required when creating a dealer or customer portal profile");
+        }
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s;
     }
 }

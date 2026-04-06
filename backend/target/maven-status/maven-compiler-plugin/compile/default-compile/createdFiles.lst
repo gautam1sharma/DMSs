@@ -60,6 +60,7 @@ com\serene\sems\model\QRole.class
 com\serene\sems\security\UserDetailsServiceImpl.class
 com\serene\sems\dto\OrderResponse.class
 com\serene\sems\audit\AuditorAwareImpl.class
+com\serene\sems\config\NullableDealerFkMigration.class
 com\serene\sems\model\QBaseEntity.class
 com\serene\sems\SemsApplication.class
 com\serene\sems\controller\AdminOrderController.class
@@ -92,6 +93,7 @@ com\serene\sems\controller\DealerCustomerController.class
 com\serene\sems\exception\GlobalExceptionHandler.class
 com\serene\sems\repository\CustomerRepositoryCustom.class
 com\serene\sems\config\CorsConfig.class
+com\serene\sems\service\CustomerDealerAssignmentService.class
 com\serene\sems\controller\AdminDashboardController.class
 com\serene\sems\repository\IdempotentRequestRepository.class
 com\serene\sems\dto\UpdateOrderStatusRequest.class

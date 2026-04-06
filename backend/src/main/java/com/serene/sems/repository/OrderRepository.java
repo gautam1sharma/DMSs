@@ -6,6 +6,7 @@ import com.serene.sems.model.OrderStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -17,6 +18,8 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
     long countByDealerId(Long dealerId);
+
+    long countByCustomerId(Long customerId);
 
     Optional<Order> findByOrderNumber(String orderNumber);
 
@@ -37,4 +40,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     BigDecimal sumTotalAmountByDealerId(@Param("dealerId") Long dealerId);
 
     List<Order> findByDealerIdIn(Collection<Long> dealerIds);
+
+    /** Native update avoids JPQL bulk-update edge cases across Hibernate dialects. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = "UPDATE orders SET dealer_id = NULL WHERE dealer_id = :dealerId", nativeQuery = true)
+    void unlinkDealerFromOrders(@Param("dealerId") Long dealerId);
 }
