@@ -129,18 +129,12 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(req.getPassword()));
         }
         if (req.getEnabled() != null) {
-            if (!req.getEnabled() && isProtectedAdministrator(user)) {
-                throw new IllegalArgumentException("Administrator accounts cannot be disabled");
-            }
             user.setEnabled(req.getEnabled());
         }
         if (req.getAccountExpiry() != null) {
             user.setAccountExpiry(req.getAccountExpiry());
         }
         if (req.getRoleNames() != null) {
-            if (isProtectedAdministrator(user) && !req.getRoleNames().contains("ADMIN")) {
-                throw new IllegalArgumentException("Cannot remove ADMIN role from an administrator");
-            }
             validateRoleCombination(req.getRoleNames());
             user.setRoles(resolveRoles(req.getRoleNames()));
         }
@@ -282,11 +276,12 @@ public class UserService {
     }
 
     /**
-     * Customer portal accounts must not share a login with dealer or administrator roles.
+     * Customer portal accounts must not share a login with dealer or administrator
+     * roles.
      */
     private static void validateRoleCombination(Set<String> roleNames) {
         if (roleNames == null || roleNames.isEmpty()) {
-            throw new IllegalArgumentException("At least one role is required");
+            return;
         }
         if (!roleNamesContainCustomer(roleNames)) {
             return;

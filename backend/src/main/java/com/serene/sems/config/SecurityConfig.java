@@ -34,25 +34,23 @@ public class SecurityConfig {
     private final ApiProperties apiProperties;
     private final ContentCachingRequestFilter contentCachingRequestFilter;
     private final IdempotencyFilter idempotencyFilter;
-    private final org.springframework.core.env.Environment environment;
 
     public SecurityConfig(
             JwtAuthFilter jwtAuthFilter,
             UserDetailsService userDetailsService,
             ApiProperties apiProperties,
             ContentCachingRequestFilter contentCachingRequestFilter,
-            IdempotencyFilter idempotencyFilter,
-            org.springframework.core.env.Environment environment) {
+            IdempotencyFilter idempotencyFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
         this.apiProperties = apiProperties;
         this.contentCachingRequestFilter = contentCachingRequestFilter;
         this.idempotencyFilter = idempotencyFilter;
-        this.environment = environment;
     }
 
     /**
-     * BCrypt's {@code matches} uses a constant-time path over the hash, reducing timing leaks on password checks.
+     * BCrypt's {@code matches} uses a constant-time path over the hash, reducing
+     * timing leaks on password checks.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -73,41 +71,35 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    private boolean isDevProfile() {
-        return java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev");
-    }
-
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, PasswordEncoder passwordEncoder, PortalHttpAuditFilter portalHttpAuditFilter)
+    public SecurityFilterChain filterChain(HttpSecurity http, PasswordEncoder passwordEncoder,
+            PortalHttpAuditFilter portalHttpAuditFilter)
             throws Exception {
         String base = apiProperties.getBasePath();
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers(HttpMethod.POST, base + "/auth/login", base + "/auth/register")
-                            .permitAll();
-                    // Only expose Swagger/OpenAPI without auth in dev profile
-                    if (isDevProfile()) {
-                        auth.requestMatchers(
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, base + "/auth/login", base + "/auth/register")
+                        .permitAll()
+                        .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html"
-                        ).permitAll();
-                    }
-                    auth.requestMatchers(HttpMethod.GET, base + "/products", base + "/products/**")
-                            .hasAnyRole("ADMIN", "DEALER", "CUSTOMER")
+                                "/swagger-ui.html")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.GET, base + "/products", base + "/products/**")
+                        .hasAnyRole("ADMIN", "DEALER", "CUSTOMER")
                         .requestMatchers(base + "/admin/**").hasRole("ADMIN")
                         .requestMatchers(base + "/dealer/**").hasRole("DEALER")
                         .requestMatchers(base + "/me/**")
                         .hasAnyRole("ADMIN", "DEALER", "CUSTOMER")
-                        .anyRequest().authenticated();
-                })
+                        .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider(passwordEncoder))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(contentCachingRequestFilter, JwtAuthFilter.class)
                 .addFilterAfter(idempotencyFilter, JwtAuthFilter.class)
-                // After authorization so the response status is finalized on the same response we observe,
+                // After authorization so the response status is finalized on the same response
+                // we observe,
                 // and immediately before dispatch to controllers.
                 .addFilterAfter(portalHttpAuditFilter, AuthorizationFilter.class);
 

@@ -48,7 +48,7 @@ public class MenuService {
         }
         Set<String> userRoles = auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .map(a -> a.startsWith("ROLE_") ? a.substring(5) : a)
+                .map(a -> a.startsWith("ROLE_") ? a.substring(6) : a)
                 .collect(Collectors.toSet());
 
         return menuItemRepository.findAllWithRoles().stream()
@@ -156,7 +156,8 @@ public class MenuService {
     }
 
     /**
-     * Adds the admin "Menus" CRUD link for DBs that were seeded before that entry existed.
+     * Adds the admin "Menus" CRUD link for DBs that were seeded before that entry
+     * existed.
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void ensureAdminMenusCrudLink() {

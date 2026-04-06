@@ -36,6 +36,7 @@ public class AuthService {
     private final AuditService auditService;
     private final LoginTimingProperties loginTimingProperties;
     private final AuthLoginTransactionService authLoginTransactionService;
+    private final DealerService dealerService;
 
     public AuthService(
             UserRepository userRepository,
@@ -46,7 +47,8 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             AuditService auditService,
             LoginTimingProperties loginTimingProperties,
-            AuthLoginTransactionService authLoginTransactionService) {
+            AuthLoginTransactionService authLoginTransactionService,
+            DealerService dealerService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.dealerRepository = dealerRepository;
@@ -56,6 +58,7 @@ public class AuthService {
         this.auditService = auditService;
         this.loginTimingProperties = loginTimingProperties;
         this.authLoginTransactionService = authLoginTransactionService;
+        this.dealerService = dealerService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -114,8 +117,8 @@ public class AuthService {
         dealer.setStateCode(sc == null || sc.isBlank() ? null : sc);
         String city = request.getCity();
         dealer.setCity(city == null || city.isBlank() ? null : city);
-        dealer.setActive(false);
-        // Inactive dealer — skip location uniqueness check; admin must activate after review
+        dealer.setActive(true);
+        dealerService.validateNewActiveDealerLocation(dealer.getCountryCode(), dealer.getStateCode(), dealer.getCity());
         dealerRepository.save(dealer);
 
         auditService.record(

@@ -82,9 +82,6 @@ public class OrderService {
         if (req.getDealerId() != null) {
             dealer = dealerRepository.findById(req.getDealerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Dealer not found"));
-            if (!dealer.isActive()) {
-                throw new IllegalArgumentException("Cannot create order: selected dealer is inactive");
-            }
             if (customer.getDealer() != null && !customer.getDealer().getId().equals(dealer.getId())) {
                 throw new IllegalArgumentException("Customer does not belong to selected dealer");
             }
@@ -93,9 +90,6 @@ public class OrderService {
         }
         if (dealer == null) {
             throw new IllegalArgumentException("Customer has no assigned dealer; choose a dealer for this order.");
-        }
-        if (!dealer.isActive()) {
-            throw new IllegalArgumentException("Cannot create order: customer's assigned dealer is inactive");
         }
         Order saved = persistOrder(customer, dealer, req.getItems());
         auditService.record(
@@ -109,16 +103,12 @@ public class OrderService {
         return toResponse(saved);
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public OrderResponse updateStatusAdmin(Long id, UpdateOrderStatusRequest req) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
         OrderStatus previous = order.getStatus();
-        previous.validateTransitionTo(req.getStatus());
         order.setStatus(req.getStatus());
-        if (req.getStatus() == OrderStatus.CANCELLED) {
-            restoreStock(order);
-        }
         Order saved = orderRepository.save(order);
         auditService.record(
                 AuditAction.ORDER_STATUS_CHANGED,
@@ -171,7 +161,7 @@ public class OrderService {
         return toResponse(saved);
     }
 
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public OrderResponse updateStatusDealer(Long id, UpdateOrderStatusRequest req) {
         Dealer dealer = dealerService.requireDealerForCurrentUser();
         Order order = orderRepository.findById(id)
@@ -180,11 +170,7 @@ public class OrderService {
             throw new ResourceNotFoundException("Order not found");
         }
         OrderStatus previous = order.getStatus();
-        previous.validateTransitionTo(req.getStatus());
         order.setStatus(req.getStatus());
-        if (req.getStatus() == OrderStatus.CANCELLED) {
-            restoreStock(order);
-        }
         Order saved = orderRepository.save(order);
         auditService.record(
                 AuditAction.ORDER_STATUS_CHANGED,
@@ -198,22 +184,10 @@ public class OrderService {
     }
 
     /**
-     * Restores stock for every item in a cancelled order using pessimistic locks to avoid lost updates.
+     * Pessimistic locks on product rows; runs in caller's transaction (see
+     * createAdmin/createDealer).
      */
-    private void restoreStock(Order order) {
-        for (OrderItem item : order.getItems()) {
-            Product product = productRepository.findByIdForUpdate(item.getProduct().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + item.getProduct().getId()));
-            product.setStockQty(product.getStockQty() + item.getQuantity());
-            productRepository.save(product);
-        }
-    }
-
-    /** Pessimistic locks on product rows; runs in caller's transaction (see createAdmin/createDealer). */
     protected Order persistOrder(Customer customer, Dealer dealer, List<OrderItemRequest> itemReqs) {
-        if (!dealer.isActive()) {
-            throw new IllegalArgumentException("Cannot create order: dealer is inactive");
-        }
         Order order = new Order();
         order.setCustomer(customer);
         order.setDealer(dealer);

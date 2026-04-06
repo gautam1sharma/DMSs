@@ -95,7 +95,8 @@ public class DealerService {
         dealer.setStateCode(blankToNull(req.getStateCode()));
         dealer.setCity(blankToNull(req.getCity()));
         dealer.setActive(req.isActive());
-        assertNoOtherActiveDealerSharesLocation(null, dealer.getCountryCode(), dealer.getStateCode(), dealer.getCity(), dealer.isActive());
+        assertNoOtherActiveDealerSharesLocation(null, dealer.getCountryCode(), dealer.getStateCode(), dealer.getCity(),
+                dealer.isActive());
         Dealer saved = dealerRepository.save(dealer);
         auditService.record(
                 AuditAction.DEALER_CREATED,
@@ -113,7 +114,6 @@ public class DealerService {
         Dealer dealer = dealerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Dealer not found"));
         boolean activeBefore = dealer.isActive();
-        String cityBefore = blankToNull(dealer.getCity());
         User user = dealer.getUser();
         if (req.getEmail() != null && !req.getEmail().equalsIgnoreCase(user.getEmail())) {
             if (userRepository.existsByEmail(req.getEmail())) {
@@ -150,12 +150,7 @@ public class DealerService {
                 dealer.getCity(),
                 dealer.isActive());
         Dealer saved = dealerRepository.save(dealer);
-        boolean cityChanged = !sameCity(cityBefore, blankToNull(saved.getCity()));
         if (activeBefore && !saved.isActive()) {
-            dealerRepository.flush();
-            customerDealerAssignmentService.reassignCustomersAwayFromDealer(saved.getId());
-        } else if (cityChanged && saved.isActive()) {
-            // Dealer moved to a new city — reassign old-city customers to the correct local dealer
             dealerRepository.flush();
             customerDealerAssignmentService.reassignCustomersAwayFromDealer(saved.getId());
         }
@@ -173,7 +168,8 @@ public class DealerService {
     }
 
     /**
-     * Removes the dealer profile: customers stay and are reassigned by city; past orders keep history with
+     * Removes the dealer profile: customers stay and are reassigned by city; past
+     * orders keep history with
      * dealer unlinked.
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -200,7 +196,6 @@ public class DealerService {
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public DealerResponse updateProfile(UpdateDealerRequest req) {
         Dealer dealer = requireDealerForCurrentUser();
-        String cityBefore = blankToNull(dealer.getCity());
         User user = dealer.getUser();
         if (req.getEmail() != null && !req.getEmail().equalsIgnoreCase(user.getEmail())) {
             if (userRepository.existsByEmail(req.getEmail())) {
@@ -234,12 +229,6 @@ public class DealerService {
                 dealer.getCity(),
                 dealer.isActive());
         Dealer saved = dealerRepository.save(dealer);
-        boolean cityChanged = !sameCity(cityBefore, blankToNull(saved.getCity()));
-        if (cityChanged && saved.isActive()) {
-            // Dealer moved to a new city — reassign old-city customers to the correct local dealer
-            dealerRepository.flush();
-            customerDealerAssignmentService.reassignCustomersAwayFromDealer(saved.getId());
-        }
         auditService.record(
                 AuditAction.DEALER_PROFILE_UPDATED, true, null, "DEALER", saved.getId(), null, null);
         return toResponse(saved);
@@ -257,7 +246,8 @@ public class DealerService {
     }
 
     /**
-     * Applies Manage Users dealer fields to an existing profile when the user still has the DEALER role.
+     * Applies Manage Users dealer fields to an existing profile when the user still
+     * has the DEALER role.
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void syncDealerProfileFromManageUsers(User user, UpdateUserRequest req) {
@@ -319,7 +309,8 @@ public class DealerService {
     }
 
     /**
-     * Creates a {@link Dealer} row for a persisted user that has the DEALER role. No-op if a profile already exists.
+     * Creates a {@link Dealer} row for a persisted user that has the DEALER role.
+     * No-op if a profile already exists.
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void ensureDealerProfileForUser(
@@ -337,8 +328,7 @@ public class DealerService {
         if (dealerRepository.findByUser(user).isPresent()) {
             return;
         }
-        boolean hasDealerRole =
-                user.getRoles().stream().anyMatch(r -> "DEALER".equals(r.getName()));
+        boolean hasDealerRole = user.getRoles().stream().anyMatch(r -> "DEALER".equals(r.getName()));
         if (!hasDealerRole) {
             throw new IllegalArgumentException("User must have the DEALER role to attach a dealer profile");
         }
@@ -351,7 +341,8 @@ public class DealerService {
         dealer.setStateCode(blankToNull(stateCode));
         dealer.setCity(blankToNull(city));
         dealer.setActive(active);
-        assertNoOtherActiveDealerSharesLocation(null, dealer.getCountryCode(), dealer.getStateCode(), dealer.getCity(), dealer.isActive());
+        assertNoOtherActiveDealerSharesLocation(null, dealer.getCountryCode(), dealer.getStateCode(), dealer.getCity(),
+                dealer.isActive());
         Dealer saved = dealerRepository.save(dealer);
         auditService.record(
                 AuditAction.DEALER_CREATED,
@@ -382,19 +373,24 @@ public class DealerService {
     }
 
     /**
-     * For public registration: rejects when an active dealer already occupies this country/state/city.
+     * For public registration: rejects when an active dealer already occupies this
+     * country/state/city.
      */
     public void validateNewActiveDealerLocation(String countryCode, String stateCode, String city) {
         assertNoOtherActiveDealerSharesLocation(null, countryCode, stateCode, city, true);
     }
 
     /**
-     * At most one <strong>active</strong> dealer may use the same country, state, and city (city compared
-     * case-insensitive), matching customer assignment rules. Applies when creating an active dealer,
-     * updating location while active, or <strong>reactivating</strong> a dealer (inactive → active): if
+     * At most one <strong>active</strong> dealer may use the same country, state,
+     * and city (city compared
+     * case-insensitive), matching customer assignment rules. Applies when creating
+     * an active dealer,
+     * updating location while active, or <strong>reactivating</strong> a dealer
+     * (inactive → active): if
      * another active dealer already serves that city, the save is rejected.
      *
-     * @param excludeDealerId dealer row to ignore (null when creating a new profile)
+     * @param excludeDealerId dealer row to ignore (null when creating a new
+     *                        profile)
      */
     private void assertNoOtherActiveDealerSharesLocation(
             Long excludeDealerId, String countryCode, String stateCode, String city, boolean willBeActive) {
@@ -408,25 +404,14 @@ public class DealerService {
             throw new IllegalArgumentException(
                     "Country, state, and city are required for an active dealer. Set a full service area before activating (only one active dealer is allowed per city).");
         }
-        boolean conflict =
-                excludeDealerId == null
-                        ? dealerRepository.existsByCountryCodeAndStateCodeAndCityIgnoreCaseAndActiveTrue(cc, sc, ct)
-                        : dealerRepository.existsByCountryCodeAndStateCodeAndCityIgnoreCaseAndActiveTrueAndIdNot(
-                                cc, sc, ct, excludeDealerId);
+        boolean conflict = excludeDealerId == null
+                ? dealerRepository.existsByCountryCodeAndStateCodeAndCityIgnoreCaseAndActiveTrue(cc, sc, ct)
+                : dealerRepository.existsByCountryCodeAndStateCodeAndCityIgnoreCaseAndActiveTrueAndIdNot(
+                        cc, sc, ct, excludeDealerId);
         if (conflict) {
             throw new IllegalArgumentException(
                     "An active dealer already serves this city. Choose a different location, keep this dealer inactive, or deactivate the other dealer first.");
         }
-    }
-
-    private static boolean sameCity(String before, String after) {
-        if (before == null && after == null) {
-            return true;
-        }
-        if (before == null || after == null) {
-            return false;
-        }
-        return before.equalsIgnoreCase(after);
     }
 
     private static String blankToNull(String s) {
