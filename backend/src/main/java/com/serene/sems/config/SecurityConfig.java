@@ -34,18 +34,21 @@ public class SecurityConfig {
     private final ApiProperties apiProperties;
     private final ContentCachingRequestFilter contentCachingRequestFilter;
     private final IdempotencyFilter idempotencyFilter;
+    private final org.springframework.core.env.Environment environment;
 
     public SecurityConfig(
             JwtAuthFilter jwtAuthFilter,
             UserDetailsService userDetailsService,
             ApiProperties apiProperties,
             ContentCachingRequestFilter contentCachingRequestFilter,
-            IdempotencyFilter idempotencyFilter) {
+            IdempotencyFilter idempotencyFilter,
+            org.springframework.core.env.Environment environment) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
         this.apiProperties = apiProperties;
         this.contentCachingRequestFilter = contentCachingRequestFilter;
         this.idempotencyFilter = idempotencyFilter;
+        this.environment = environment;
     }
 
     /**
@@ -70,6 +73,10 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
+    private boolean isDevProfile() {
+        return java.util.Arrays.asList(environment.getActiveProfiles()).contains("dev");
+    }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, PasswordEncoder passwordEncoder, PortalHttpAuditFilter portalHttpAuditFilter)
             throws Exception {
@@ -77,20 +84,25 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, base + "/auth/login", base + "/auth/register")
-                        .permitAll()
-                        .requestMatchers(
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(HttpMethod.POST, base + "/auth/login", base + "/auth/register")
+                            .permitAll();
+                    // Only expose Swagger/OpenAPI without auth in dev profile
+                    if (isDevProfile()) {
+                        auth.requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
-                        ).permitAll()
-                        .requestMatchers(HttpMethod.GET, base + "/products", base + "/products/**")
-                        .hasAnyRole("ADMIN", "DEALER", "CUSTOMER")
+                        ).permitAll();
+                    }
+                    auth.requestMatchers(HttpMethod.GET, base + "/products", base + "/products/**")
+                            .hasAnyRole("ADMIN", "DEALER", "CUSTOMER")
                         .requestMatchers(base + "/admin/**").hasRole("ADMIN")
                         .requestMatchers(base + "/dealer/**").hasRole("DEALER")
-                        .anyRequest().authenticated()
-                )
+                        .requestMatchers(base + "/me/**")
+                        .hasAnyRole("ADMIN", "DEALER", "CUSTOMER")
+                        .anyRequest().authenticated();
+                })
                 .authenticationProvider(authenticationProvider(passwordEncoder))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(contentCachingRequestFilter, JwtAuthFilter.class)

@@ -13,6 +13,8 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidation(
@@ -53,15 +57,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrity(
             DataIntegrityViolationException ex, HttpServletRequest req) {
-        String msg = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        // Log full details for debugging, but do not expose DB internals to the client
+        logger.error("Data integrity violation on {}: {}", req.getRequestURI(),
+                ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage());
         ErrorResponse body =
-                ErrorResponse.of(HttpStatus.CONFLICT.value(), msg != null ? msg : "Data constraint violation", req.getRequestURI(), null);
+                ErrorResponse.of(HttpStatus.CONFLICT.value(), "A data conflict occurred", req.getRequestURI(), null);
         return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest req) {
-        ErrorResponse body = ErrorResponse.of(HttpStatus.FORBIDDEN.value(), "Access denied", req.getRequestURI(), null);
+        String msg = ex.getMessage();
+        if (msg == null || msg.isBlank()) {
+            msg = "Access denied";
+        }
+        ErrorResponse body = ErrorResponse.of(HttpStatus.FORBIDDEN.value(), msg, req.getRequestURI(), null);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
@@ -85,7 +95,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<ErrorResponse> handleDisabled(DisabledException ex, HttpServletRequest req) {
-        ErrorResponse body = ErrorResponse.of(HttpStatus.FORBIDDEN.value(), "Unable to sign in", req.getRequestURI(), null);
+        String msg = ex.getMessage();
+        if (msg == null || msg.isBlank()) {
+            msg = "Unable to sign in";
+        }
+        ErrorResponse body = ErrorResponse.of(HttpStatus.FORBIDDEN.value(), msg, req.getRequestURI(), null);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 

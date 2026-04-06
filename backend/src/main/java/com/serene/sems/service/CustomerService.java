@@ -3,6 +3,7 @@ package com.serene.sems.service;
 import com.serene.sems.dto.CreateCustomerRequest;
 import com.serene.sems.dto.CustomerResponse;
 import com.serene.sems.dto.UpdateCustomerRequest;
+import com.serene.sems.dto.UpdateUserRequest;
 import com.serene.sems.exception.ResourceNotFoundException;
 import com.serene.sems.model.AuditAction;
 import com.serene.sems.model.Customer;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -113,6 +115,58 @@ public class CustomerService {
         customerRepository.flush();
     }
 
+    /**
+     * Applies Manage Users customer fields to an existing profile when the user still has the CUSTOMER role.
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void syncCustomerProfileFromManageUsers(User user, UpdateUserRequest req) {
+        if (req == null) {
+            return;
+        }
+        boolean touched = req.getCustomerFullName() != null
+                || req.getCustomerActive() != null
+                || req.getPhone() != null
+                || req.getAddress() != null
+                || req.getCountryCode() != null
+                || req.getStateCode() != null
+                || req.getCity() != null;
+        if (!touched) {
+            return;
+        }
+        Customer c = customerRepository.findByUser(user).orElse(null);
+        if (c == null) {
+            return;
+        }
+        String ccBefore = blankToNull(c.getCountryCode());
+        String scBefore = blankToNull(c.getStateCode());
+        String cityBefore = blankToNull(c.getCity());
+        if (req.getCustomerFullName() != null) {
+            c.setFullName(req.getCustomerFullName().trim());
+        }
+        if (req.getCustomerActive() != null) {
+            c.setActive(req.getCustomerActive());
+        }
+        if (req.getPhone() != null) {
+            c.setPhone(req.getPhone());
+        }
+        if (req.getAddress() != null) {
+            c.setAddress(req.getAddress());
+        }
+        if (req.getCountryCode() != null) {
+            c.setCountryCode(blankToNull(req.getCountryCode()));
+        }
+        if (req.getStateCode() != null) {
+            c.setStateCode(blankToNull(req.getStateCode()));
+        }
+        if (req.getCity() != null) {
+            c.setCity(blankToNull(req.getCity()));
+        }
+        if (!sameJurisdiction(ccBefore, scBefore, cityBefore, c)) {
+            assignDealerFromCustomerLocation(c);
+        }
+        customerRepository.save(c);
+    }
+
     @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Page<CustomerResponse> listAdmin(Long dealerId, String q, Pageable pageable) {
         String nameQ = (q != null && !q.isBlank()) ? q.trim() : null;
@@ -131,6 +185,7 @@ public class CustomerService {
         if (req.getDealerId() != null) {
             dealer = dealerRepository.findById(req.getDealerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Dealer not found"));
+            requireActiveDealer(dealer);
         } else {
             dealer = resolveDealerForLocation(req.getCountryCode(), req.getStateCode(), req.getCity());
         }
@@ -182,19 +237,36 @@ public class CustomerService {
         return before.equalsIgnoreCase(after);
     }
 
+    private static boolean sameJurisdiction(String ccBefore, String scBefore, String cityBefore, Customer c) {
+        String ccAfter = blankToNull(c.getCountryCode());
+        String scAfter = blankToNull(c.getStateCode());
+        String cityAfter = blankToNull(c.getCity());
+        return Objects.equals(ccBefore, ccAfter)
+                && Objects.equals(scBefore, scAfter)
+                && sameCity(cityBefore, cityAfter);
+    }
+
+    private static void requireActiveDealer(Dealer dealer) {
+        if (!dealer.isActive()) {
+            throw new IllegalArgumentException("Cannot assign a customer to an inactive dealer");
+        }
+    }
+
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public CustomerResponse updateAdmin(Long id, UpdateCustomerRequest req) {
         Customer c = customerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
+        String ccBefore = blankToNull(c.getCountryCode());
+        String scBefore = blankToNull(c.getStateCode());
         String cityBefore = blankToNull(c.getCity());
         applyUpdate(c, req);
-        String cityAfter = blankToNull(c.getCity());
-        if (!sameCity(cityBefore, cityAfter)) {
+        if (!sameJurisdiction(ccBefore, scBefore, cityBefore, c)) {
             assignDealerFromCustomerLocation(c);
         }
         if (req.getDealerId() != null) {
             Dealer d = dealerRepository.findById(req.getDealerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Dealer not found"));
+            requireActiveDealer(d);
             c.setDealer(d);
         }
         Customer saved = customerRepository.save(c);
@@ -252,10 +324,11 @@ public class CustomerService {
         if (c.getDealer() == null || !c.getDealer().getId().equals(dealer.getId())) {
             throw new ResourceNotFoundException("Customer not found");
         }
+        String ccBefore = blankToNull(c.getCountryCode());
+        String scBefore = blankToNull(c.getStateCode());
         String cityBefore = blankToNull(c.getCity());
         applyUpdate(c, req);
-        String cityAfter = blankToNull(c.getCity());
-        if (!sameCity(cityBefore, cityAfter)) {
+        if (!sameJurisdiction(ccBefore, scBefore, cityBefore, c)) {
             assignDealerFromCustomerLocation(c);
         }
         Customer saved = customerRepository.save(c);

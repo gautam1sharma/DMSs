@@ -7,6 +7,7 @@ import com.serene.sems.service.CustomerService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("${app.api.base-path}/dealer/customers")
 @Tag(name = "Dealer Customers")
 @SecurityRequirement(name = "bearerAuth")
+@PreAuthorize("hasRole('DEALER')")
 public class DealerCustomerController {
 
     private final CustomerService customerService;

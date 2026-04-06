@@ -2,6 +2,7 @@ package com.serene.sems.security;
 
 import com.serene.sems.model.Role;
 import com.serene.sems.model.User;
+import com.serene.sems.repository.DealerRepository;
 import com.serene.sems.repository.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -25,9 +26,11 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public static final int MAX_DAYS_SINCE_LAST_LOGIN = 365;
 
     private final UserRepository userRepository;
+    private final DealerRepository dealerRepository;
 
-    public UserDetailsServiceImpl(UserRepository userRepository) {
+    public UserDetailsServiceImpl(UserRepository userRepository, DealerRepository dealerRepository) {
         this.userRepository = userRepository;
+        this.dealerRepository = dealerRepository;
     }
 
     @Override
@@ -61,6 +64,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
             throw new org.springframework.security.authentication.DisabledException("Account disabled");
         }
 
+        assertDealerActiveIfDealerPortalUser(user);
+
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getUsername())
                 .password(user.getPassword())
@@ -78,5 +83,28 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .map(r -> "ROLE_" + r)
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Inactive dealer profiles cannot authenticate as dealers. Users who also have ADMIN may still sign in
+     * (admin console) even if their dealer row is inactive.
+     */
+    private void assertDealerActiveIfDealerPortalUser(User user) {
+        boolean hasDealer =
+                user.getRoles().stream().anyMatch(r -> r != null && "DEALER".equals(r.getName()));
+        boolean hasAdmin =
+                user.getRoles().stream().anyMatch(r -> r != null && "ADMIN".equals(r.getName()));
+        if (!hasDealer || hasAdmin) {
+            return;
+        }
+        dealerRepository
+                .findByUser(user)
+                .ifPresent(
+                        d -> {
+                            if (!d.isActive()) {
+                                throw new org.springframework.security.authentication.DisabledException(
+                                        "Dealer account is inactive");
+                            }
+                        });
     }
 }

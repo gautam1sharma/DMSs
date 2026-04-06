@@ -13,7 +13,8 @@ import java.util.List;
 
 /**
  * Assigns customers to dealers by country/state/city. Customers are not owned by a dealer; assignment is
- * derived from location and can change when city changes or when a dealer is removed.
+ * derived from location and can change when city changes, when a dealer is removed, or when a dealer is
+ * deactivated (customers are moved to another active dealer in the same city or left unassigned).
  */
 @Service
 public class CustomerDealerAssignmentService {

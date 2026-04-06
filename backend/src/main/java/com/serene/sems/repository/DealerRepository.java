@@ -20,4 +20,10 @@ public interface DealerRepository extends JpaRepository<Dealer, Long> {
     /** Active dealers in this exact jurisdiction (city match is case-insensitive). */
     List<Dealer> findByCountryCodeAndStateCodeAndCityIgnoreCaseAndActiveTrueOrderByIdAsc(
             String countryCode, String stateCode, String city);
+
+    boolean existsByCountryCodeAndStateCodeAndCityIgnoreCaseAndActiveTrue(
+            String countryCode, String stateCode, String city);
+
+    boolean existsByCountryCodeAndStateCodeAndCityIgnoreCaseAndActiveTrueAndIdNot(
+            String countryCode, String stateCode, String city, Long id);
 }

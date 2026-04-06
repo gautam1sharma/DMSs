@@ -114,7 +114,8 @@ public class AuthService {
         dealer.setStateCode(sc == null || sc.isBlank() ? null : sc);
         String city = request.getCity();
         dealer.setCity(city == null || city.isBlank() ? null : city);
-        dealer.setActive(true);
+        dealer.setActive(false);
+        // Inactive dealer — skip location uniqueness check; admin must activate after review
         dealerRepository.save(dealer);
 
         auditService.record(

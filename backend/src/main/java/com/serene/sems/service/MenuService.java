@@ -48,7 +48,7 @@ public class MenuService {
         }
         Set<String> userRoles = auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .map(a -> a.startsWith("ROLE_") ? a.substring(6) : a)
+                .map(a -> a.startsWith("ROLE_") ? a.substring(5) : a)
                 .collect(Collectors.toSet());
 
         return menuItemRepository.findAllWithRoles().stream()

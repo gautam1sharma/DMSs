@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -115,6 +116,8 @@ public class UserService {
     public UserResponse update(Long id, UpdateUserRequest req) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        boolean hadDealerRole = userHasDealerRole(user);
+        boolean hadCustomerRole = userHasCustomerRole(user);
         if (req.getEmail() != null) {
             if (!req.getEmail().equalsIgnoreCase(user.getEmail())
                     && userRepository.existsByEmail(req.getEmail())) {
@@ -126,16 +129,30 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(req.getPassword()));
         }
         if (req.getEnabled() != null) {
+            if (!req.getEnabled() && isProtectedAdministrator(user)) {
+                throw new IllegalArgumentException("Administrator accounts cannot be disabled");
+            }
             user.setEnabled(req.getEnabled());
         }
         if (req.getAccountExpiry() != null) {
             user.setAccountExpiry(req.getAccountExpiry());
         }
         if (req.getRoleNames() != null) {
+            if (isProtectedAdministrator(user) && !req.getRoleNames().contains("ADMIN")) {
+                throw new IllegalArgumentException("Cannot remove ADMIN role from an administrator");
+            }
             validateRoleCombination(req.getRoleNames());
             user.setRoles(resolveRoles(req.getRoleNames()));
         }
         User saved = userRepository.save(user);
+        if (req.getRoleNames() != null) {
+            if (hadDealerRole && !userHasDealerRole(saved)) {
+                dealerService.purgeDealerProfileIfExists(saved);
+            }
+            if (hadCustomerRole && !userHasCustomerRole(saved)) {
+                customerService.detachCustomerProfileForUser(saved);
+            }
+        }
         if (userHasDealerRole(saved) && dealerService.findDealerForUser(saved).isEmpty()) {
             requireDealerCompanyName(req.getCompanyName());
             requireSharedLocation(req.getCountryCode(), req.getStateCode(), req.getCity());
@@ -163,6 +180,12 @@ public class UserService {
                     req.getStateCode(),
                     req.getCity(),
                     customerActive);
+        }
+        if (userHasDealerRole(saved) && dealerService.findDealerForUser(saved).isPresent()) {
+            dealerService.syncDealerProfileFromManageUsers(saved, req);
+        }
+        if (userHasCustomerRole(saved) && customerService.findCustomerForUser(saved).isPresent()) {
+            customerService.syncCustomerProfileFromManageUsers(saved, req);
         }
         auditService.record(AuditAction.USER_UPDATED, true, null, "USER", id, null, null);
         return toResponse(saved);
@@ -208,7 +231,8 @@ public class UserService {
         }
         Set<Role> roles = new HashSet<>();
         for (String name : names) {
-            Role r = roleRepository.findByName(name)
+            String key = name == null ? "" : name.trim().toUpperCase(Locale.ROOT);
+            Role r = roleRepository.findByName(key)
                     .orElseThrow(() -> new IllegalArgumentException("Unknown role: " + name));
             roles.add(r);
         }
@@ -262,25 +286,41 @@ public class UserService {
      */
     private static void validateRoleCombination(Set<String> roleNames) {
         if (roleNames == null || roleNames.isEmpty()) {
+            throw new IllegalArgumentException("At least one role is required");
+        }
+        if (!roleNamesContainCustomer(roleNames)) {
             return;
         }
-        if (!roleNames.contains("CUSTOMER")) {
-            return;
-        }
-        if (roleNames.contains("DEALER")) {
+        if (roleNamesContainDealer(roleNames)) {
             throw new IllegalArgumentException("A user cannot have both DEALER and CUSTOMER roles");
         }
-        if (roleNames.contains("ADMIN")) {
+        if (roleNamesContainAdmin(roleNames)) {
             throw new IllegalArgumentException("A user cannot have both ADMIN and CUSTOMER roles");
         }
     }
 
     private static boolean roleNamesContainDealer(Set<String> roleNames) {
-        return roleNames != null && roleNames.contains("DEALER");
+        return containsRoleIgnoreCase(roleNames, "DEALER");
     }
 
     private static boolean roleNamesContainCustomer(Set<String> roleNames) {
-        return roleNames != null && roleNames.contains("CUSTOMER");
+        return containsRoleIgnoreCase(roleNames, "CUSTOMER");
+    }
+
+    private static boolean roleNamesContainAdmin(Set<String> roleNames) {
+        return containsRoleIgnoreCase(roleNames, "ADMIN");
+    }
+
+    private static boolean containsRoleIgnoreCase(Set<String> roleNames, String role) {
+        if (roleNames == null) {
+            return false;
+        }
+        for (String n : roleNames) {
+            if (n != null && role.equalsIgnoreCase(n.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean userHasDealerRole(User user) {
