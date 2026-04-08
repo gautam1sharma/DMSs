@@ -6,7 +6,6 @@ import com.serene.sems.model.User;
 import com.serene.sems.repository.ProductRepository;
 import com.serene.sems.repository.RoleRepository;
 import com.serene.sems.repository.UserRepository;
-import com.serene.sems.service.MenuService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -27,8 +26,7 @@ public class DataSeeder {
             UserRepository userRepository,
             ProductRepository productRepository,
             PasswordEncoder passwordEncoder,
-            IndianDemoBulkSeed indianDemoBulkSeed,
-            MenuService menuService) {
+            IndianDemoBulkSeed indianDemoBulkSeed) {
         return args -> {
             ensureRole(roleRepository, "ADMIN");
             ensureRole(roleRepository, "DEALER");
@@ -51,8 +49,6 @@ public class DataSeeder {
             ensureSereneVehicleCatalog(productRepository);
 
             indianDemoBulkSeed.ensureIndianDemoSeeded(passwordEncoder);
-            menuService.ensureDefaultMenusIfEmpty();
-            menuService.ensureAdminMenusCrudLink();
         };
     }
 

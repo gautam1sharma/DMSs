@@ -1,14 +1,3 @@
-export interface MenuItemDto {
-  id: number
-  label: string
-  path: string
-  icon?: string
-  sortOrder: number
-  parentId?: number | null
-  enabled: boolean
-  roleNames: string[]
-}
-
 export interface LoginResponse {
   token: string
   type: string

@@ -21,8 +21,7 @@ public class OpenApiConfig {
                 .servers(List.of(new Server().url("/").description("API root — versioned paths under /api/v1")))
                 .info(new Info()
                         .title("Serene API")
-                        .description("Serene — dealer management REST API v1 (`/api/v1`). "
-                                + "Optional `Idempotency-Key` header on POST replays prior 2xx responses.")
+                        .description("Serene — dealer management REST API v1 (`/api/v1`).")
                         .version("1.0.0"))
                 .addSecurityItem(new SecurityRequirement().addList(scheme))
                 .components(new Components().addSecuritySchemes(scheme,

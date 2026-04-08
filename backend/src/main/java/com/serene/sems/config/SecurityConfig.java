@@ -4,8 +4,6 @@ import com.serene.sems.config.properties.ApiProperties;
 import com.serene.sems.security.JwtAuthFilter;
 import com.serene.sems.service.AuditService;
 import com.serene.sems.web.PortalHttpAuditFilter;
-import com.serene.sems.web.ContentCachingRequestFilter;
-import com.serene.sems.web.IdempotencyFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -32,20 +30,14 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
     private final ApiProperties apiProperties;
-    private final ContentCachingRequestFilter contentCachingRequestFilter;
-    private final IdempotencyFilter idempotencyFilter;
 
     public SecurityConfig(
             JwtAuthFilter jwtAuthFilter,
             UserDetailsService userDetailsService,
-            ApiProperties apiProperties,
-            ContentCachingRequestFilter contentCachingRequestFilter,
-            IdempotencyFilter idempotencyFilter) {
+            ApiProperties apiProperties) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
         this.apiProperties = apiProperties;
-        this.contentCachingRequestFilter = contentCachingRequestFilter;
-        this.idempotencyFilter = idempotencyFilter;
     }
 
     /**
@@ -91,13 +83,9 @@ public class SecurityConfig {
                         .hasAnyRole("ADMIN", "DEALER", "CUSTOMER")
                         .requestMatchers(base + "/admin/**").hasRole("ADMIN")
                         .requestMatchers(base + "/dealer/**").hasRole("DEALER")
-                        .requestMatchers(base + "/me/**")
-                        .hasAnyRole("ADMIN", "DEALER", "CUSTOMER")
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider(passwordEncoder))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(contentCachingRequestFilter, JwtAuthFilter.class)
-                .addFilterAfter(idempotencyFilter, JwtAuthFilter.class)
                 // After authorization so the response status is finalized on the same response
                 // we observe,
                 // and immediately before dispatch to controllers.

@@ -7,6 +7,9 @@ backend/.idea/
 frontend/node_modules/
 frontend/dist/
 
+# Local step-by-step rewrite / notes (not committed)
+learning/
+
 # OS / IDE
 .DS_Store
 Thumbs.db
