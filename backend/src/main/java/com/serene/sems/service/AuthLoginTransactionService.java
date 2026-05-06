@@ -121,6 +121,7 @@ public class AuthLoginTransactionService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .roles(roles)
+                .hasAvatar(user.isHasAvatar())
                 .build();
     }
 }

@@ -29,6 +29,12 @@ api.interceptors.response.use(
         window.location.href = '/login'
       }
     } else if (status && status !== 422) {
+      const reqUrl = String(err.config?.url ?? '')
+      const method = (err.config?.method ?? 'get').toLowerCase()
+      const avatarPath = '/me/avatar'
+      if (status === 404 && method === 'get' && (reqUrl === avatarPath || reqUrl.endsWith(avatarPath))) {
+        return Promise.reject(err)
+      }
       notification.error({ message: 'Error', description: msg })
     }
 

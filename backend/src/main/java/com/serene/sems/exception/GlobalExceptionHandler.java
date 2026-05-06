@@ -15,6 +15,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +46,16 @@ public class GlobalExceptionHandler {
         ErrorResponse body = ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), req.getRequestURI(),
                 null);
         return ResponseEntity.badRequest().body(body);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUpload(MaxUploadSizeExceededException ex, HttpServletRequest req) {
+        ErrorResponse body = ErrorResponse.of(
+                HttpStatus.PAYLOAD_TOO_LARGE.value(),
+                "Uploaded file is too large (max 2 MB)",
+                req.getRequestURI(),
+                null);
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(body);
     }
 
     @ExceptionHandler({ ResourceNotFoundException.class, EntityNotFoundException.class })

@@ -69,6 +69,7 @@ com\serene\sems\config\SecurityConfig.class
 com\serene\sems\repository\DealerRepository.class
 com\serene\sems\config\properties\ApiProperties.class
 com\serene\sems\model\QProduct.class
+com\serene\sems\config\UserHasAvatarColumnMigration.class
 com\serene\sems\dto\CreateProductRequest.class
 com\serene\sems\exception\ErrorResponse.class
 com\serene\sems\dto\CreateCustomerRequest.class

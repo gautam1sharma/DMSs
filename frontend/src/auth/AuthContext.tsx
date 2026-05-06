@@ -18,6 +18,7 @@ interface AuthContextValue {
   token: string | null
   user: AuthUser | null
   loading: boolean
+  mergeUser: (patch: Partial<AuthUser>) => void
   login: (username: string, password: string) => Promise<LoginResponse>
   registerDealer: (body: {
     username: string
@@ -36,12 +37,16 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
+function normalizeUser(u: AuthUser): AuthUser {
+  return { ...u, hasAvatar: Boolean(u.hasAvatar) }
+}
+
 function loadStored(): { token: string | null; user: AuthUser | null } {
   const token = localStorage.getItem(TOKEN_KEY)
   const raw = localStorage.getItem(USER_KEY)
   if (!token || !raw) return { token: null, user: null }
   try {
-    return { token, user: JSON.parse(raw) as AuthUser }
+    return { token, user: normalizeUser(JSON.parse(raw) as AuthUser) }
   } catch {
     return { token: null, user: null }
   }
@@ -54,10 +59,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const persist = useCallback((res: LoginResponse) => {
     const { token: t, ...rest } = res
+    const next = normalizeUser(rest as AuthUser)
     localStorage.setItem(TOKEN_KEY, t)
-    localStorage.setItem(USER_KEY, JSON.stringify(rest))
+    localStorage.setItem(USER_KEY, JSON.stringify(next))
     setToken(t)
-    setUser(rest)
+    setUser(next)
+  }, [])
+
+  const mergeUser = useCallback((patch: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return prev
+      const next = normalizeUser({ ...prev, ...patch })
+      localStorage.setItem(USER_KEY, JSON.stringify(next))
+      return next
+    })
   }, [])
 
   const login = useCallback(
@@ -102,12 +117,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       user,
       loading: false,
+      mergeUser,
       login,
       registerDealer,
       logout,
       hasRole,
     }),
-    [token, user, login, registerDealer, logout, hasRole],
+    [token, user, mergeUser, login, registerDealer, logout, hasRole],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

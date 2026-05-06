@@ -12,6 +12,7 @@ import ManageProducts from './pages/admin/ManageProducts'
 import ManageOrders from './pages/admin/ManageOrders'
 import ManageUsers from './pages/admin/ManageUsers'
 import ManageAuditLogs from './pages/admin/ManageAuditLogs'
+import SettingsPage from './pages/SettingsPage'
 import DealerDashboard from './pages/dealer/DealerDashboard'
 import MyCustomers from './pages/dealer/MyCustomers'
 import DealerProducts from './pages/dealer/DealerProducts'
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="orders" element={<ManageOrders />} />
           <Route path="users" element={<ManageUsers />} />
           <Route path="audit-logs" element={<ManageAuditLogs />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Route>
 
@@ -57,6 +59,7 @@ export default function App() {
           <Route path="customers" element={<MyCustomers />} />
           <Route path="products" element={<DealerProducts />} />
           <Route path="orders" element={<MyOrders />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="profile" element={<DealerProfile />} />
         </Route>
       </Route>

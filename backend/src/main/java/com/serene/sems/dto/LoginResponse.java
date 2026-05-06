@@ -10,17 +10,26 @@ public class LoginResponse {
     private String username;
     private String email;
     private Set<String> roles;
+    private boolean hasAvatar;
 
     public LoginResponse() {
     }
 
-    public LoginResponse(String token, String type, Long userId, String username, String email, Set<String> roles) {
+    public LoginResponse(
+            String token,
+            String type,
+            Long userId,
+            String username,
+            String email,
+            Set<String> roles,
+            boolean hasAvatar) {
         this.token = token;
         this.type = type;
         this.userId = userId;
         this.username = username;
         this.email = email;
         this.roles = roles;
+        this.hasAvatar = hasAvatar;
     }
 
     public static Builder builder() {
@@ -75,6 +84,14 @@ public class LoginResponse {
         this.roles = roles;
     }
 
+    public boolean isHasAvatar() {
+        return hasAvatar;
+    }
+
+    public void setHasAvatar(boolean hasAvatar) {
+        this.hasAvatar = hasAvatar;
+    }
+
     public static class Builder {
         private String token;
         private String type = "Bearer";
@@ -82,6 +99,7 @@ public class LoginResponse {
         private String username;
         private String email;
         private Set<String> roles;
+        private boolean hasAvatar;
 
         public Builder token(String token) {
             this.token = token;
@@ -113,8 +131,13 @@ public class LoginResponse {
             return this;
         }
 
+        public Builder hasAvatar(boolean hasAvatar) {
+            this.hasAvatar = hasAvatar;
+            return this;
+        }
+
         public LoginResponse build() {
-            return new LoginResponse(token, type, userId, username, email, roles);
+            return new LoginResponse(token, type, userId, username, email, roles, hasAvatar);
         }
     }
 }

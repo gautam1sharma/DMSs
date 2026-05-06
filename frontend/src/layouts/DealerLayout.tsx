@@ -24,8 +24,10 @@ import {
   ShoppingOutlined,
   ShoppingCartOutlined,
   IdcardOutlined,
+  SettingOutlined,
 } from '@ant-design/icons'
 import { useAuth } from '../auth/AuthContext'
+import { useUserAvatarUrl } from '../hooks/useUserAvatarUrl'
 import {
   invalidateDealerPortalQueries,
   isDealerPortalQuery,
@@ -48,6 +50,7 @@ export default function DealerLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user, logout } = useAuth()
+  const avatarSrc = useUserAvatarUrl()
   const queryClient = useQueryClient()
   const dealerFetching = useIsFetching({ predicate: isDealerPortalQuery })
   const screens = useBreakpoint()
@@ -110,6 +113,15 @@ export default function DealerLayout() {
           />
           <div style={{ flex: 1 }} />
           <Space size="middle" align="center">
+            <Tooltip title="Settings — profile photo">
+              <Button
+                type="default"
+                icon={<SettingOutlined />}
+                onClick={() => navigate('/dealer/settings')}
+              >
+                Settings
+              </Button>
+            </Tooltip>
             <Tooltip title="Reload data on this screen">
               <Button
                 type="default"
@@ -136,7 +148,7 @@ export default function DealerLayout() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <Avatar style={{ backgroundColor: '#0d9488' }} icon={<UserOutlined />} />
+              <Avatar src={avatarSrc} style={{ backgroundColor: '#0d9488' }} icon={<UserOutlined />} />
               <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
                 <Text strong>{user?.username}</Text>
                 <Text type="secondary" style={{ fontSize: 12 }}>

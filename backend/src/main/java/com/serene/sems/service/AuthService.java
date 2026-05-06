@@ -140,6 +140,7 @@ public class AuthService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .roles(Set.of("DEALER"))
+                .hasAvatar(false)
                 .build();
     }
 }

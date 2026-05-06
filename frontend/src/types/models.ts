@@ -5,6 +5,15 @@ export interface LoginResponse {
   username: string
   email: string
   roles: string[]
+  hasAvatar?: boolean
+}
+
+export interface CurrentUserResponse {
+  userId: number
+  username: string
+  email: string
+  roles: string[]
+  hasAvatar: boolean
 }
 
 export interface SpringPage<T> {

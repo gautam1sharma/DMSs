@@ -1,6 +1,10 @@
 spring:
   application:
     name: serene-backend
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   jpa:

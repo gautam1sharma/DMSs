@@ -1,12 +1,15 @@
 package com.serene.sems.model;
 
+import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
@@ -42,6 +45,21 @@ public class User extends BaseEntity {
     /** Last successful authentication; used for 365-day inactivity expiry. */
     private Instant lastLoginAt;
 
+    /**
+     * Nullable in the database so existing deployments can add the column safely; treat null as false
+     * via {@link #isHasAvatar()}.
+     */
+    @Column(name = "has_avatar")
+    private Boolean hasAvatar;
+
+    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "avatar_data")
+    private byte[] avatarData;
+
+    @Column(name = "avatar_content_type", length = 80)
+    private String avatarContentType;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -49,6 +67,13 @@ public class User extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+
+    @PrePersist
+    void prePersistNormalizeAvatarFlag() {
+        if (hasAvatar == null) {
+            hasAvatar = Boolean.FALSE;
+        }
+    }
 
     public String getUsername() {
         return username;
@@ -112,6 +137,30 @@ public class User extends BaseEntity {
 
     public void setLastLoginAt(Instant lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
+    }
+
+    public boolean isHasAvatar() {
+        return Boolean.TRUE.equals(hasAvatar);
+    }
+
+    public void setHasAvatar(boolean hasAvatar) {
+        this.hasAvatar = hasAvatar;
+    }
+
+    public byte[] getAvatarData() {
+        return avatarData;
+    }
+
+    public void setAvatarData(byte[] avatarData) {
+        this.avatarData = avatarData;
+    }
+
+    public String getAvatarContentType() {
+        return avatarContentType;
+    }
+
+    public void setAvatarContentType(String avatarContentType) {
+        this.avatarContentType = avatarContentType;
     }
 
     public Set<Role> getRoles() {

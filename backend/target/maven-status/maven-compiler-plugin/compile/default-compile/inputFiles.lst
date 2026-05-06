@@ -8,10 +8,13 @@ C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\sec
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\model\BaseEntity.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\CustomerResponse.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\OrderItemResponse.java
+C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\config\UserHasAvatarColumnMigration.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\repository\CustomerRepository.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\LoginResponse.java
+C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\service\UserProfileService.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\repository\OrderRepository.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\config\QuerydslConfig.java
+C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\controller\MeController.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\repository\ProductRepository.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\config\properties\LoginTimingProperties.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\CreateDealerRequest.java
@@ -47,6 +50,7 @@ C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\rep
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\service\CustomerService.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\service\DashboardService.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\AuditLogResponse.java
+C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\CurrentUserResponse.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\dto\UpdateCustomerRequest.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\exception\GlobalExceptionHandler.java
 C:\Users\Gautam\Desktop\My\Project\DMS\backend\src\main\java\com\serene\sems\controller\DealerProfileController.java
